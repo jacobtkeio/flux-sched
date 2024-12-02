@@ -148,11 +148,15 @@ static int process_args (std::shared_ptr<resource_ctx_t> &ctx, int argc, char **
     optmgr_kv_t<resource_opts_t> opts_store;
     std::string info_str = "";
 
+    flux_log (ctx->h, LOG_DEBUG, "%s: entered with %d params", __FUNCTION__, argc);
+
     for (int i = 0; i < argc; i++) {
         const std::string kv (argv[i]);
         if ((rc = opts_store.put (kv)) < 0) {
             flux_log_error (ctx->h, "%s: optmgr_kv_t::put (%s)", __FUNCTION__, argv[i]);
             return rc;
+        } else {
+            flux_log (ctx->h, LOG_DEBUG, "%s: processed param: %s", __FUNCTION__, argv[i]);
         }
     }
     if ((rc = opts_store.parse (info_str)) < 0) {
@@ -182,7 +186,11 @@ static int process_config_file (std::shared_ptr<resource_ctx_t> &ctx)
     json_t *v = nullptr;
     optmgr_kv_t<resource_opts_t> opts_store;
     std::string info_str = "";
+    flux_log (ctx->h, LOG_DEBUG, "%s: module: %s", __FUNCTION__, mod_name);
+    flux_log (ctx->h, LOG_DEBUG, "%s: config: %s", __FUNCTION__, json_dumps(conf, 0));
     json_object_foreach (conf, k, v) {
+        flux_log (ctx->h, LOG_DEBUG, "%s: got %s", __FUNCTION__, k);
+
         std::string value;
         if (!(tmp = json_dumps (v, JSON_ENCODE_ANY | JSON_COMPACT))) {
             errno = ENOMEM;
@@ -207,7 +215,7 @@ static int process_config_file (std::shared_ptr<resource_ctx_t> &ctx)
         return rc;
     }
     if (info_str != "") {
-        flux_log (ctx->h, LOG_DEBUG, "%s: %s", __FUNCTION__, info_str.c_str ());
+        flux_log (ctx->h, LOG_DEBUG, "%s: info_str %s", __FUNCTION__, info_str.c_str ());
     }
     ctx->opts += opts_store.get_opt ();
     return rc;
