@@ -1100,7 +1100,7 @@ static void notify_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_
 
         char *up_str = idset_encode (up, IDSET_FLAG_RANGE);
         char *down_str = idset_encode (down, IDSET_FLAG_RANGE);
-        char *lost_str = ctx->get_lost ();
+        char *lost_str = idset_encode (ctx->m_notify_lost, IDSET_FLAG_RANGE);
 
         if (strcmp (up_str, "") == 0) {
             free (up_str);
@@ -1119,11 +1119,18 @@ static void notify_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_
         //  resources from its resource.acquire RPC.
         // This is guaranteed by the order of mod_main:
         //  init_resource_graph runs before flux_reactor_run.
+        // Only send resources at first so that the
+        //  module can initialize its graph.
+        if (flux_respond_pack (ctx->h, msg, "{s:O*}", "resources", ctx->m_notify_resources.get ())
+            < 0) {
+            flux_log_error (ctx->h, "%s: flux_respond_pack", __FUNCTION__);
+            goto error;
+        }
+
+        // Once the module's graph is initialized, send the node statuses.
         if (flux_respond_pack (ctx->h,
                                msg,
-                               "{s:O* s:s* s:s* s:s* s:f}",
-                               "resources",
-                               ctx->m_notify_resources.get (),
+                               "{s:s* s:s* s:s* s:f}",
                                "up",
                                up_str,
                                "down",

@@ -292,18 +292,6 @@ static int init_resource_graph (std::shared_ptr<resource_ctx_t> &ctx)
         flux_log (ctx->h, LOG_ERR, "%s: traverser initialization", __FUNCTION__);
         return -1;
     }
-    // If resources were lost before the graph was initialized,
-    // perform the graph shrinking now that it has been initialized.
-    // Note that update_resource runs before traverser->initialize
-    // on s-f-feasibility restart.
-    if (ctx->is_lost_set ()) {
-        char *lost = ctx->get_lost ();
-        if (shrink_resources (ctx, lost) < 0) {
-            flux_log (ctx->h, LOG_ERR, "%s: shrink_resources (lost)", __FUNCTION__);
-            return -1;
-        }
-        free (lost);
-    }
 
     // prevent users from consuming unbounded memory with arbitrary resource types
     subsystem_t::storage_t::finalize ();

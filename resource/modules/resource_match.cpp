@@ -76,7 +76,6 @@ void msg_wrap_t::set_msg (const flux_msg_t *msg)
 resource_interface_t::~resource_interface_t ()
 {
     flux_future_decref (update_f);
-    idset_destroy (m_notify_lost);
 }
 
 resource_interface_t::resource_interface_t (const resource_interface_t &o)
@@ -128,23 +127,6 @@ void resource_interface_t::set_ups (const char *ups)
     m_ups = ups;
 }
 
-char *resource_interface_t::get_lost () const
-{
-    return idset_encode (m_notify_lost, 0);
-}
-
-void resource_interface_t::add_to_lost (const char *lost)
-{
-    struct idset *lost_ids = idset_decode (lost);
-    (void)idset_add (m_notify_lost, lost_ids);
-    idset_destroy (lost_ids);
-}
-
-bool resource_interface_t::is_lost_set () const
-{
-    return !(idset_empty (m_notify_lost));
-}
-
 resource_ctx_t::~resource_ctx_t ()
 {
     flux_msg_handler_delvec (handlers);
@@ -153,6 +135,7 @@ resource_ctx_t::~resource_ctx_t ()
             flux_log_error (h, "%s: flux_respond_error", __FUNCTION__);
         }
     }
+    idset_destroy (m_notify_lost);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -301,6 +284,13 @@ static void update_resource (flux_future_t *f, void *arg)
         //  via sched-fluxion-resource.notify
         if (resources != NULL) {
             ctx->m_notify_resources = json::value (resources);
+        }
+        if (lost != NULL) {
+            struct idset *lost_idset = idset_decode (lost);
+            if (rc += idset_add (ctx->m_notify_lost, lost_idset)) {
+                flux_log (ctx->h, LOG_ERR, "%s: idset_add (lost)", __FUNCTION__);
+            }
+            idset_destroy (lost_idset);
         }
         if (expiration > 0.) {
             ctx->m_notify_expiration = expiration;
@@ -1069,7 +1059,6 @@ static int mark_lazy (std::shared_ptr<resource_ctx_t> &ctx,
 
         case resource_pool_t::status_t::DOWN:
         default:
-            // "down" shouldn't be a part of the first response of resource.acquire
             errno = EINVAL;
             rc = -1;
     }
@@ -1119,15 +1108,6 @@ int shrink_resources (std::shared_ptr<resource_ctx_t> &ctx, const char *ids)
     int rc = -1;
     std::set<int64_t> ranks;
 
-    // Don't shrink until traverser is initialized.
-    // shrink_resources will get called at the end of
-    // init_resources to remove any resources lost in
-    // the meanwhile (tracked with add_to_lost).
-    ctx->add_to_lost (ids);
-    if (!ctx->traverser->is_initialized ()) {
-        rc = 0;
-        goto done;
-    }
     if (!ids) {
         errno = EINVAL;
         goto done;
