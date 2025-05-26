@@ -304,6 +304,13 @@ static int init_resource_graph (std::shared_ptr<resource_ctx_t> &ctx)
         }
         free (lost);
     }
+    // Likewise, mark downs if they were marked_lazy before graph initialization
+    if (ctx->is_downs_set ()) {
+        if (mark (ctx, ctx->get_downs ().c_str (), resource_pool_t::status_t::DOWN) < 0) {
+            flux_log (ctx->h, LOG_ERR, "%s: mark (down)", __FUNCTION__);
+            return -1;
+        }
+    }
 
     // prevent users from consuming unbounded memory with arbitrary resource types
     subsystem_t::storage_t::finalize ();

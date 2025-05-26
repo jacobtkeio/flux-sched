@@ -128,6 +128,21 @@ void resource_interface_t::set_ups (const char *ups)
     m_ups = ups;
 }
 
+const std::string &resource_interface_t::get_downs () const
+{
+    return m_downs;
+}
+
+bool resource_interface_t::is_downs_set () const
+{
+    return m_downs != "";
+}
+
+void resource_interface_t::set_downs (const char *downs)
+{
+    m_downs = downs;
+}
+
 char *resource_interface_t::get_lost () const
 {
     return idset_encode (m_notify_lost, 0);
@@ -1068,8 +1083,13 @@ static int mark_lazy (std::shared_ptr<resource_ctx_t> &ctx,
             break;
 
         case resource_pool_t::status_t::DOWN:
+            // "down" shouldn't be a part of the first response of resource.acquire,
+            // but it can be a part of the first s-f-resource.notify response:
+            if (!ctx->m_acquire_resources_from_core) {
+                ctx->set_downs (ids);
+                break;
+            }
         default:
-            // "down" shouldn't be a part of the first response of resource.acquire
             errno = EINVAL;
             rc = -1;
     }

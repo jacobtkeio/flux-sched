@@ -77,6 +77,9 @@ class resource_interface_t {
     const std::string &get_ups () const;
     void set_ups (const char *ups);
     bool is_ups_set () const;
+    const std::string &get_downs () const;
+    void set_downs (const char *ups);
+    bool is_downs_set () const;
     char *get_lost () const;
     void add_to_lost (const char *lost);
     bool is_lost_set () const;
@@ -85,6 +88,7 @@ class resource_interface_t {
    private:
     struct idset *m_notify_lost = idset_create (0, IDSET_FLAG_AUTOGROW);
     std::string m_ups = "";
+    std::string m_downs = "";
     int m_update_rc = 0;
 };
 
