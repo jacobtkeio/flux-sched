@@ -40,7 +40,9 @@ test_expect_success 'a job on all ranks is satisfiable' '
     flux ion-resource -v match satisfiability ${notify_base}/shrink4.yaml
 '
 test_expect_success 'disconnect rank 3' '
-	flux overlay disconnect 3
+	flux overlay disconnect 3 &&
+    flux dmesg &&
+    false
 '
 test_expect_success 'there are now only 3 nodes' '
 	flux resource list -s all &&
