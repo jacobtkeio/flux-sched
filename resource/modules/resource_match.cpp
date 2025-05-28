@@ -294,6 +294,10 @@ static void update_resource (flux_future_t *f, void *arg)
         flux_log_error (ctx->h, "%s: json_unpack_ex: %s", __FUNCTION__, error.text);
         goto done;
     }
+    flux_log_error (ctx->h, "%s: got up: %s", __FUNCTION__, up);
+    flux_log_error (ctx->h, "%s: got down: %s", __FUNCTION__, down);
+    flux_log_error (ctx->h, "%s: got lost: %s", __FUNCTION__, lost);
+    flux_log_error (ctx->h, "%s: got expiration: %lf", __FUNCTION__, expiration);
     if ((rc = update_resource_db (ctx, resources, up, down, lost)) < 0) {
         flux_log_error (ctx->h, "%s: update_resource_db", __FUNCTION__);
         goto done;

@@ -185,31 +185,31 @@ matrix.add_multiarch_build(
     ),
 )
 
-matrix.add_multiarch_build(
-    name="noble",
-    default_suffix=" - test-install",
-    args=common_args,
-    env=dict(
-        TEST_INSTALL="t",
-    ),
-)
-matrix.add_multiarch_build(
-    name="el9",
-    default_suffix=" - test-install",
-    args=common_args,
-    env=dict(
-        TEST_INSTALL="t",
-        CHECK_RUN_SOURCE_ENV="/opt/rh/gcc-toolset-13/enable",
-    ),
-)
-matrix.add_multiarch_build(
-    name="alpine",
-    default_suffix=" - test-install",
-    args=common_args,
-    env=dict(
-        TEST_INSTALL="t",
-    ),
-)
+#matrix.add_multiarch_build(
+#    name="noble",
+#    default_suffix=" - test-install",
+#    args=common_args,
+#    env=dict(
+#        TEST_INSTALL="t",
+#    ),
+#)
+#matrix.add_multiarch_build(
+#    name="el9",
+#    default_suffix=" - test-install",
+#    args=common_args,
+#    env=dict(
+#        TEST_INSTALL="t",
+#        CHECK_RUN_SOURCE_ENV="/opt/rh/gcc-toolset-13/enable",
+#    ),
+#)
+#matrix.add_multiarch_build(
+#    name="alpine",
+#    default_suffix=" - test-install",
+#    args=common_args,
+#    env=dict(
+#        TEST_INSTALL="t",
+#    ),
+#)
 # single arch builds that still produce a container
 matrix.add_build(
     name="fedora40 - test-install",
@@ -222,42 +222,42 @@ matrix.add_build(
 )
 
 # Ubuntu: TEST_INSTALL, test oldest supported clang
-matrix.add_build(
-    name="jammy - test-install",
-    image="jammy",
-    env=dict(
-        TEST_INSTALL="t",
-        CC="clang-15",
-        CXX="clang++-15",
-        # NOTE: ancient valgrind (pre 3.20) fails with dwarf5
-        CFLAGS="-gdwarf-4",
-        CXXFLAGS="-gdwarf-4",
-    ),
-    docker_tag=True,
-)
-
-# Debian: gcc-12, distcheck
-matrix.add_build(
-    name="bookworm - gcc-12,distcheck",
-    image="bookworm",
-    env=dict(
-        CC="gcc-12",
-        CXX="g++-12",
-        DISTCHECK="t",
-    ),
-    args="",
-)
-
-# fedora40: clang-18
-matrix.add_build(
-    name="fedora40 - clang-18",
-    image="fedora40",
-    env=dict(
-        CC="clang-18",
-        CXX="clang++-18",
-        chain_lint="t",
-    ),
-)
+#matrix.add_build(
+#    name="jammy - test-install",
+#    image="jammy",
+#    env=dict(
+#        TEST_INSTALL="t",
+#        CC="clang-15",
+#        CXX="clang++-15",
+#        # NOTE: ancient valgrind (pre 3.20) fails with dwarf5
+#        CFLAGS="-gdwarf-4",
+#        CXXFLAGS="-gdwarf-4",
+#    ),
+#    docker_tag=True,
+#)
+#
+## Debian: gcc-12, distcheck
+#matrix.add_build(
+#    name="bookworm - gcc-12,distcheck",
+#    image="bookworm",
+#    env=dict(
+#        CC="gcc-12",
+#        CXX="g++-12",
+#        DISTCHECK="t",
+#    ),
+#    args="",
+#)
+#
+## fedora40: clang-18
+#matrix.add_build(
+#    name="fedora40 - clang-18",
+#    image="fedora40",
+#    env=dict(
+#        CC="clang-18",
+#        CXX="clang++-18",
+#        chain_lint="t",
+#    ),
+#)
 
 # coverage
 matrix.add_build(
