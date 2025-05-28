@@ -14,6 +14,7 @@ jobspec1="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/test001.yaml"
 jobspec2="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/satisfiability/test001.yaml"
 
 SIZE=4
+export FLUX_URI_RESOLVE_LOCAL=t
 export FLUX_SCHED_MODULE=sched-simple
 
 test_under_flux $SIZE full --test-exit-mode=leader
@@ -108,6 +109,11 @@ test_expect_success 'a job on all ranks is satisfiable' '
 
 test_expect_success 'disconnect rank 3' '
 	flux overlay disconnect 3
+'
+
+test_expect_success 'there are now only 3 nodes' '
+    flux resource list -s all &&
+    test $(flux resource list -s all -no {nnodes}) -eq 3
 '
 
 test_expect_success 'a 4 node job is now unsatisfiable' '
