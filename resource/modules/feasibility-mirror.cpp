@@ -10,7 +10,8 @@
 
 #include "resource_match.hpp"
 
-MOD_NAME ("sched-fluxion-feasibility");
+static std::string cb_base (".check");
+static const char *cb_name = std::string (mod_name).append (cb_base).c_str ();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Request Handler Prototypes
@@ -21,14 +22,8 @@ static void feasibility_request_cb (flux_t *h,
                                     const flux_msg_t *msg,
                                     void *arg);
 
-static void feasibility_mirror_cb (flux_t *h,
-                                   flux_msg_handler_t *w,
-                                   const flux_msg_t *msg,
-                                   void *arg);
-
 static const struct flux_msg_handler_spec htab[] =
-    {{FLUX_MSGTYPE_REQUEST, "feasibility.check", feasibility_request_cb, 0},
-     {FLUX_MSGTYPE_REQUEST, "feasibility.mirror", feasibility_mirror_cb, 0},
+    {{FLUX_MSGTYPE_REQUEST, cb_name, feasibility_request_cb, 0},
      FLUX_MSGHANDLER_TABLE_END};
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +47,7 @@ static std::shared_ptr<resource_ctx_t> getctx (flux_t *h)
 {
     void *d = NULL;
     std::shared_ptr<resource_ctx_t> ctx = nullptr;
-    if ((d = flux_aux_get (h, "sched-fluxion-feasibility")) != NULL)
+    if ((d = flux_aux_get (h, "sched-fluxion-feasibility-mirror")) != NULL)
         ctx = *(static_cast<std::shared_ptr<resource_ctx_t> *> (d));
     if (!ctx) {
         try {
@@ -111,7 +106,7 @@ static int process_config_file (std::shared_ptr<resource_ctx_t> &ctx)
     if ((rc = flux_conf_unpack (flux_get_conf (ctx->h),
                                 nullptr,
                                 "{ s?:o }",
-                                "sched-fluxion-feasibility",
+                                "sched-fluxion-feasibility-mirror",
                                 &conf))
         < 0) {
         flux_log_error (ctx->h, "%s: flux_conf_unpack", __FUNCTION__);
@@ -249,68 +244,6 @@ error:
         flux_log_error (h, "%s: flux_respond_error", __FUNCTION__);
 }
 
-static void feasibility_mirror_cb (flux_t *h,
-                                   flux_msg_handler_t *w,
-                                   const flux_msg_t *msg,
-                                   void *arg)
-{
-    flux_t *test_h;
-    flux_future_t *f;
-    json_t *args = json_object ();
-
-    std::string module_name_base ("sched-fluxion-feasibility-mirror@");
-    const char *uri = NULL;
-    const char *module_name = NULL;
-
-    std::shared_ptr<resource_ctx_t> ctx = getctx ((flux_t *)arg);
-
-    if (flux_request_unpack (msg, NULL, "{s?:s s?:s}", "name", &module_name, "uri", &uri) < 0) {
-        flux_log_error (h, "%s: flux_request_decode", __FUNCTION__);
-        goto done;
-    }
-
-    // If no name is given, make one from the uri
-    if (!module_name) {
-        const std::string uri_stdstr (uri);
-        module_name = module_name_base.append (uri_stdstr).c_str ();
-    }
-
-    if (!uri) {
-        flux_log_error (h, "%s: no uri provided", __FUNCTION__);
-        goto done;
-    }
-
-    if (test_h = flux_open (uri, 0)) {
-        flux_close (test_h);
-    } else {
-        flux_log_error (h, "%s: could not open flux at %s", __FUNCTION__, uri);
-        goto done;
-    }
-
-    if (!(f = flux_rpc_pack (h,
-                             "module.load",
-                             FLUX_NODEID_ANY,
-                             0,
-                             "{s:s s:s s:O}",
-                             "name",
-                             module_name,
-                             "path",
-                             "sched-fluxion-feasibility-mirror",
-                             "args",
-                             args))) {
-        flux_log_error (h, "%s: flux_rpc_pack", __FUNCTION__);
-        goto done;
-    }
-
-    if (flux_rpc_get (f, NULL) < 0) {
-        flux_log_error (h, "%s: error in module.load rpc", __FUNCTION__);
-        goto done;
-    }
-
-done:
-    return;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Resource Graph and Traverser Initialization
 ////////////////////////////////////////////////////////////////////////////////
@@ -394,13 +327,13 @@ extern "C" int mod_main (flux_t *h, int argc, char **argv)
         uint32_t rank = 1;
 
         if (!(ctx = init_module (h, argc, argv))) {
-            flux_log (h, LOG_ERR, "%s: can't initialize feasibility module", __FUNCTION__);
+            flux_log (h, LOG_ERR, "%s: can't initialize feasibility-mirror module", __FUNCTION__);
             goto done;
         }
 
         // Because mod_main is always active, the following is safe.
-        flux_aux_set (h, "sched-fluxion-feasibility", &ctx, NULL);
-        flux_log (h, LOG_DEBUG, "%s: feasibility module starting", __FUNCTION__);
+        flux_aux_set (h, "sched-fluxion-feasibility-mirror", &ctx, NULL);
+        flux_log (h, LOG_DEBUG, "%s: feasibility-mirror module starting", __FUNCTION__);
 
         /* Attempt to register the feasibility service. Print a warning
          * if this fails (likely because sched-simple is still loaded), but

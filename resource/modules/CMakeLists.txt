@@ -18,10 +18,16 @@ flux_add_plugin ( sched-fluxion-resource MODULE
 flux_add_plugin ( sched-fluxion-feasibility MODULE
     ${CMAKE_CURRENT_SOURCE_DIR}/feasibility.cpp
     )
+flux_add_plugin ( sched-fluxion-feasibility-mirror MODULE
+    ${CMAKE_CURRENT_SOURCE_DIR}/feasibility-mirror.cpp
+    )
 
 target_link_libraries (sched-fluxion-resource PRIVATE
 	sched-fluxion-resource-module
     )
 target_link_libraries (sched-fluxion-feasibility PRIVATE
+	sched-fluxion-resource-module
+    )
+target_link_libraries (sched-fluxion-feasibility-mirror PRIVATE
 	sched-fluxion-resource-module
     )
