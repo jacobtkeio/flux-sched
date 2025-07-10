@@ -1431,6 +1431,8 @@ static int run (std::shared_ptr<resource_ctx_t> &ctx,
             rc = tr.run (j, ctx->writers, match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE, jobid, at);
         else if (std::string ("satisfiability") == cmd)
             rc = tr.run (j, ctx->writers, match_op_t::MATCH_SATISFIABILITY, jobid, at);
+        else if (std::string ("without_allocating") == cmd)
+            rc = tr.run (j, ctx->writers, match_op_t::MATCH_WITHOUT_ALLOCATING, jobid, at);
         else
             errno = EINVAL;
     } catch (const Flux::Jobspec::parse_error &e) {
@@ -1516,8 +1518,8 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     start = std::chrono::system_clock::now ();
     if (strcmp ("allocate", cmd) != 0 && strcmp ("allocate_orelse_reserve", cmd) != 0
-        && strcmp ("allocate_with_satisfiability", cmd) != 0
-        && strcmp ("satisfiability", cmd) != 0) {
+        && strcmp ("allocate_with_satisfiability", cmd) != 0 && strcmp ("satisfiability", cmd) != 0
+        && strcmp ("without_allocating", cmd) != 0) {
         rc = -1;
         errno = EINVAL;
         flux_log (ctx->h, LOG_ERR, "%s: unknown cmd: %s", __FUNCTION__, cmd);
@@ -1542,7 +1544,7 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
     *overhead = elapsed.count ();
     update_match_perf (*overhead, jobid, true);
 
-    if (cmd != std::string ("satisfiability")) {
+    if (cmd != std::string ("satisfiability") && cmd != std::string ("without_allocating")) {
         if ((rc = track_schedule_info (ctx, jobid, rsv, *at, jstr, o, *overhead)) != 0) {
             flux_log_error (ctx->h,
                             "%s: can't add job info (id=%jd)",
