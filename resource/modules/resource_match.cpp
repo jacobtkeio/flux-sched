@@ -24,6 +24,7 @@ extern "C" {
 #include <map>
 #include <cinttypes>
 #include <chrono>
+#include <math.h>
 
 #include "resource_match.hpp"
 #include "resource/schema/resource_graph.hpp"
@@ -1500,10 +1501,80 @@ out:
     return rc;
 }
 
+static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
+                                         int64_t jobid,
+                                         const std::string &jstr,
+                                         int64_t num_matches,
+                                         int64_t *now,
+                                         int64_t *at,
+                                         double *overhead,
+                                         std::stringstream &o,
+                                         flux_error_t *errp)
+{
+    int rc = 0;
+    std::chrono::time_point<std::chrono::system_clock> start;
+    std::chrono::duration<double> elapsed;
+    std::chrono::duration<int64_t> epoch;
+    int max_matches = ctx->opts.get_opt ().get_maximum_matches ();
+    int64_t match_time = *at;
+
+    start = std::chrono::system_clock::now ();
+
+    if (num_matches <= 0) {
+        rc = -1;
+        errno = EINVAL;
+        flux_log (ctx->h, LOG_ERR, "%s: invalid num_matches: %d", __FUNCTION__, num_matches);
+        goto done;
+    } else if (num_matches > max_matches) {
+        flux_log (ctx->h,
+                  LOG_DEBUG,
+                  "%s: num_matches %d > maximum %d; set to max",
+                  __FUNCTION__,
+                  num_matches,
+                  max_matches);
+        num_matches = max_matches;
+    }
+
+    for (int m = 0; m < num_matches; m++) {
+        if ((rc = run (ctx, jobid, "without_allocating", jstr, &match_time, errp)) < 0) {
+            if (errno == EBUSY) {
+                m--;  // This match failed, so keep looking
+                errno = 0;
+                match_time += 1;
+                continue;
+            } else {
+                elapsed = std::chrono::system_clock::now () - start;
+                *overhead = elapsed.count ();
+                update_match_perf (*overhead, jobid, false);
+                goto done;
+            }
+        }
+        if ((rc = ctx->writers->emit (o)) < 0) {
+            flux_log_error (ctx->h, "%s: writer can't emit", __FUNCTION__);
+            goto done;
+        }
+
+        elapsed = std::chrono::system_clock::now () - start;
+        *overhead = elapsed.count ();
+        update_match_perf (*overhead, jobid, true);
+
+        // Return (by reference) the first match time
+        if (m == 0)
+            *at = match_time;
+
+        // Look ahead to avoid matching the same resources
+        match_time += 1;
+    }
+
+done:
+    return rc;
+}
+
 int run_match (std::shared_ptr<resource_ctx_t> &ctx,
                int64_t jobid,
                const char *cmd,
                const std::string &jstr,
+               int64_t num_matches,
                int64_t *now,
                int64_t *at,
                double *overhead,
@@ -1528,6 +1599,18 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
+
+    if (std::string ("without_allocating") == cmd)
+        return run_match_without_allocating (ctx,
+                                             jobid,
+                                             jstr,
+                                             num_matches,
+                                             now,
+                                             at,
+                                             overhead,
+                                             o,
+                                             errp);
+
     if ((rc = run (ctx, jobid, cmd, jstr, at, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
@@ -1544,15 +1627,12 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
     *overhead = elapsed.count ();
     update_match_perf (*overhead, jobid, true);
 
-    if (cmd != std::string ("satisfiability") && cmd != std::string ("without_allocating")) {
-        if ((rc = track_schedule_info (ctx, jobid, rsv, *at, jstr, o, *overhead)) != 0) {
+    if (cmd != std::string ("satisfiability"))
+        if ((rc = track_schedule_info (ctx, jobid, rsv, *at, jstr, o, *overhead)) != 0)
             flux_log_error (ctx->h,
                             "%s: can't add job info (id=%jd)",
                             __FUNCTION__,
                             (intmax_t)jobid);
-            goto done;
-        }
-    }
 
 done:
     return rc;

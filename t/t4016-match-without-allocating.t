@@ -52,12 +52,12 @@ test_expect_success 'match-allocate fails when all resources are allocated' '
     test_expect_code 16 flux ion-resource match allocate ${jobspec}
 '
 
-# match-without-allocating will not search ahead in time
-test_expect_success 'match-without-allocating fails when all resources are allocated' '
-    test_expect_code 16 flux ion-resource match without_allocating ${jobspec} &&
-    test_expect_code 16 flux ion-resource match without_allocating ${jobspec} &&
-    test_expect_code 16 flux ion-resource match without_allocating ${jobspec} &&
-    test_expect_code 16 flux ion-resource match without_allocating ${jobspec}
+# match-without-allocating will search ahead in time, past the allocation, and succeed
+test_expect_success 'match-without-allocating succeeds when all resources are allocated' '
+    flux ion-resource match without_allocating ${jobspec} &&
+    flux ion-resource match without_allocating ${jobspec} &&
+    flux ion-resource match without_allocating ${jobspec} &&
+    flux ion-resource match without_allocating ${jobspec}
 '
 
 test_expect_success 'detecting of a non-existent jobspec file works' '
