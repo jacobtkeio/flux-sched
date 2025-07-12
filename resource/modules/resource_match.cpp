@@ -24,6 +24,7 @@ extern "C" {
 #include <map>
 #include <cinttypes>
 #include <chrono>
+#include <math.h>
 
 #include "resource_match.hpp"
 #include "resource/schema/resource_graph.hpp"
@@ -1419,6 +1420,7 @@ static int run (std::shared_ptr<resource_ctx_t> &ctx,
                 int64_t jobid,
                 match_op_t op,
                 const std::string &jstr,
+                int64_t num_matches,
                 int64_t *at,
                 std::stringstream &o,
                 flux_error_t *errp)
@@ -1427,7 +1429,7 @@ static int run (std::shared_ptr<resource_ctx_t> &ctx,
     std::vector<std::shared_ptr<match_writers_t>> writers = {ctx->writers};
     try {
         Flux::Jobspec::Jobspec j{jstr};
-        rc = ctx->traverser->run (j, ctx->writers, op, jobid, at, o);
+        rc = ctx->traverser->run (j, ctx->writers, op, jobid, at, o, num_matches);
     } catch (const Flux::Jobspec::parse_error &e) {
         errno = EINVAL;
         if (errp && e.what ()) {
@@ -1497,6 +1499,7 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
                int64_t jobid,
                const char *cmd,
                const std::string &jstr,
+               int64_t num_matches,
                int64_t *now,
                int64_t *at,
                double *overhead,
@@ -1508,19 +1511,45 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
     std::chrono::duration<double> elapsed;
     std::chrono::duration<int64_t> epoch;
     bool rsv = false;
+    int64_t max_matches = 1;
+    match_op_t op;
+    
+    if (!ctx->opts.get_opt ().is_maximum_matches_set ()) {
+        rc = -1;
+        errno = EINVAL;
+        flux_log (ctx->h, LOG_ERR, "%s: maximum_matches unset", __FUNCTION__);
+        goto done;
+    } else {
+        max_matches = ctx->opts.get_opt ().get_maximum_matches ();
+    }
 
     start = std::chrono::system_clock::now ();
-    match_op_t op = string_to_match_op (cmd);
+    op = string_to_match_op (cmd);
     if (!match_op_valid (op)) {
         rc = -1;
         errno = EINVAL;
         flux_log (ctx->h, LOG_ERR, "%s: unknown cmd: %s", __FUNCTION__, cmd);
         goto done;
     }
+    if (num_matches <= 0) {
+        rc = -1;
+        errno = EINVAL;
+        flux_log (ctx->h, LOG_ERR, "%s: invalid num_matches: %d", __FUNCTION__, num_matches);
+        goto done;
+    } else if (num_matches > max_matches) {
+        flux_log (ctx->h,
+                  LOG_DEBUG,
+                  "%s: num_matches %d > maximum %d; set to max",
+                  __FUNCTION__,
+                  num_matches,
+                  max_matches);
+        num_matches = max_matches;
+    }
+
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
-    if ((rc = run (ctx, jobid, op, jstr, at, o, errp)) < 0) {
+    if ((rc = run (ctx, jobid, op, jstr, num_matches, at, o, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
         update_match_perf (*overhead, jobid, false);

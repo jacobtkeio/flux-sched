@@ -110,13 +110,15 @@ class dfu_traverser_t : protected detail::dfu_impl_t {
              match_op_t op,
              int64_t id,
              int64_t *at,
-             std::stringstream &o);
+             std::stringstream &o,
+             int64_t num_matches = 1);
     int run (Jobspec::Jobspec &jobspec,
              std::vector<std::shared_ptr<match_writers_t>> &writers,
              match_op_t op,
              int64_t id,
              int64_t *at,
-             std::stringstream &o);
+             std::stringstream &o,
+             int64_t num_matches = 1);
 
     /*! Read str which is a serialized allocation data (e.g., written in JGF)
      *  with rd, and traverse the resource graph to update it with this data.

@@ -64,8 +64,13 @@ class ResourceModuleInterface:
         }
         return self.handle.rpc("sched-fluxion-resource.match", payload).get()
 
-    def rpc_wo_alloc(self, jobid, jobspec_str):
-        payload = {"cmd": "without_allocating", "jobid": jobid, "jobspec": jobspec_str}
+    def rpc_wo_alloc(self, jobid, jobspec_str, number):
+        payload = {
+            "cmd": "without_allocating",
+            "jobid": jobid,
+            "jobspec": jobspec_str,
+            "number": number,
+        }
         return self.handle.rpc("sched-fluxion-resource.match", payload).get()
 
     def rpc_wo_alloc_extend(self, jobid, jobspec_str):
@@ -187,7 +192,7 @@ def match_wo_alloc_action(args):
     with open(args.jobspec, "r") as stream:
         jobspec_str = yaml.dump(yaml.safe_load(stream))
         rmod = ResourceModuleInterface()
-        resp = rmod.rpc_wo_alloc(rmod.rpc_next_jobid(), jobspec_str)
+        resp = rmod.rpc_wo_alloc(rmod.rpc_next_jobid(), jobspec_str, args.number)
         print(heading())
         print(body(resp["jobid"], resp["status"], resp["at"], resp["overhead"]))
         print("=" * width())
@@ -514,6 +519,13 @@ def parse_match(parser_m: argparse.ArgumentParser):
         subparser.add_argument(
             "jobspec", metavar="Jobspec", type=str, help="Jobspec file name"
         )
+
+    #
+    # Number argument for match without_alloc subcommand
+    #
+    parser_mw.add_argument(
+        "-n", "--number", metavar="num", type=int, default=1, help="Perform n matches"
+    )
 
     parser_ma.set_defaults(func=match_alloc_action)
     parser_ms.set_defaults(func=match_alloc_sat_action)
