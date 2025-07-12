@@ -396,17 +396,19 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           std::shared_ptr<match_writers_t> &writer,
                           match_op_t op,
                           int64_t jobid,
-                          int64_t *at)
+                          int64_t *at,
+                          int64_t num_matches)
 {
     std::vector<std::shared_ptr<match_writers_t>> writers = {writer};
-    return run (jobspec, writers, op, jobid, at);
+    return run (jobspec, writers, op, jobid, at, num_matches);
 }
 
 int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           std::vector<std::shared_ptr<match_writers_t>> &writers,
                           match_op_t op,
                           int64_t jobid,
-                          int64_t *at)
+                          int64_t *at,
+                          int64_t num_matches)
 {
     // Clear the error message to disambiguate errors
     clear_err_message ();
@@ -424,6 +426,7 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
     int64_t graph_end = std::chrono::duration_cast<std::chrono::seconds> (
                             graph_duration.graph_end.time_since_epoch ())
                             .count ();
+    int64_t match_time = *at;
     int64_t max_dur;
     detail::jobmeta_t meta;
     vtx_t root = get_graph_db ()->metadata.roots.at (dom);
@@ -444,51 +447,59 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
     if (op == match_op_t::MATCH_WITHOUT_ALLOCATING)
         meta.alloc_type = jobmeta_t::alloc_type_t::AT_NO_ALLOC;
 
-    if ((op == match_op_t::MATCH_SATISFIABILITY)
-        && (rc = is_satisfiable (jobspec, meta, x, root, dfv)) == 0) {
-        detail::dfu_impl_t::update ();
-    } else if ((rc = schedule (jobspec, meta, x, op, root, dfv)) == 0) {
-        *at = meta.at;
-        if (*at == graph_end) {
-            detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
-            // no schedulable point found even at the end of the time, return EBUSY
-            errno = EBUSY;
-            return -1;
-        }
-        if (*at < 0 or *at > graph_end) {
-            detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
-            errno = EINVAL;
-            return -1;
-        }
-        // If job ends after the resource graph expires, reduce the duration
-        // so it coincides with the graph expiration. Note that we could
-        // arguably return ENOTSUP/EINVAL instead. Also note that we
-        // know *at < graph_end from the previous check, and meta.duration
-        // is < int64_t max from meta.build.
-        if ((*at + static_cast<int64_t> (meta.duration)) > graph_end)
-            meta.duration = graph_end - *at;
-        // returns 0 or -1
-        rc = detail::dfu_impl_t::update (root, combined_writers, meta);
-
-        if (op == match_op_t::MATCH_WITHOUT_ALLOCATING) {
-            max_dur = maximum_duration_resources_available (get_graph_db (),
-                                                            vtx_writer->get_vertices (),
-                                                            *at);
-            if (max_dur < 0) {
+    for (int m = 0; m < num_matches; m++) {
+        if ((op == match_op_t::MATCH_SATISFIABILITY)
+                && (rc = is_satisfiable (jobspec, meta, x, root, dfv)) == 0) {
+            detail::dfu_impl_t::update ();
+        } else if ((rc = schedule (jobspec, meta, x, op, root, dfv)) == 0) {
+            match_time = meta.at;
+            if (match_time == graph_end) {
                 detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
-                return rc;
+                // no schedulable point found even at the end of the time, return EBUSY
+                errno = EBUSY;
+                return -1;
             }
-            for (auto writer : writers) {
-                // Update the matched resources with their extended, maximum duration
-                if ((rc = writer->emit_tm (*at, *at + max_dur)) < 0) {
-                    detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
-                    return rc;
+            if (match_time < 0 or match_time > graph_end) {
+                detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
+                errno = EINVAL;
+                return -1;
+            }
+            // If job ends after the resource graph expires, reduce the duration
+            // so it coincides with the graph expiration. Note that we could
+            // arguably return ENOTSUP/EINVAL instead. Also note that we
+            // know *at < graph_end from the previous check, and meta.duration
+            // is < int64_t max from meta.build.
+            if ((match_time + static_cast<int64_t> (meta.duration)) > graph_end)
+                meta.duration = graph_end - match_time;
+            // returns 0 or -1
+            rc = detail::dfu_impl_t::update (root, combined_writers, meta);
+            rc += detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
+            // Extend the duration of MWOA resources as much as possible
+            if (op == match_op_t::MATCH_WITHOUT_ALLOCATING) {
+                max_dur = maximum_duration_resources_available (get_graph_db (),
+                        vtx_writer->get_vertices (),
+                        match_time);
+                // Reached graph end, so return success
+                if (max_dur == 0)
+                    return 0;
+                // A planner error occured
+                if (max_dur < 0) {
+                    errno = EINVAL;
+                    return -1;
+                }
+                for (auto writer : writers) {
+                    // Update the matched resources with their extended, maximum duration
+                    if ((rc = writer->emit_tm (match_time, match_time + max_dur)) < 0)
+                        return rc;
                 }
             }
+            // Return the first match time if there are multiple
+            if (m == 0) *at = match_time;
+
+            // Start the next match at the end of  the current one
+            meta.at = match_time + max_dur;
         }
     }
-    // returns 0 or -1
-    rc += detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
 
     return rc;
 }
