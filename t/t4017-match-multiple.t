@@ -29,7 +29,6 @@ policy=high maximum-matches=6
 '
 
 test_expect_success 'match-without-allocating -n works with a 1-node, 1-socket jobspec' '
-    flux ion-resource match without_allocating -n4 ${jobspec} &&
     flux ion-resource match without_allocating -n4 ${jobspec} | grep -o "{.*starttime" >out1 &&
     flux ion-resource match without_allocating --number=4 ${jobspec} | grep "{" >out2 &&
     test $(wc -l out1 | cut -d" " -f1,1) -eq 4 &&
