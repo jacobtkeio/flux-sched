@@ -29,9 +29,8 @@ policy=high maximum-matches=6
 '
 
 test_expect_success 'match-without-allocating -n works with a 1-node, 1-socket jobspec' '
-    flux ion-resource match without_allocating -n4 ${jobspec} &&
-    flux ion-resource match without_allocating -n4 ${jobspec} | grep -o "{.*starttime" >out1 &&
-    flux ion-resource match without_allocating --number=4 ${jobspec} | grep "{" >out2 &&
+    flux ion-resource match without_allocating -n4 ${jobspec} | grep -o "{.*starttime" | tee out1 &&
+    flux ion-resource match without_allocating --number=4 ${jobspec} | grep "{" | tee out2 &&
     test $(wc -l out1 | cut -d" " -f1,1) -eq 4 &&
     test $(wc -l out2 | cut -d" " -f1,1) -eq 4
 '
@@ -48,13 +47,13 @@ test_expect_success 'match-allocate fails when all resources are allocated' '
 '
 
 test_expect_success 'match-without-allocating -n succeeds when all resources are allocated' '
-    flux ion-resource match without_allocating -n 5 ${jobspec} | grep "{" >out3 &&
+    flux ion-resource match without_allocating -n 5 ${jobspec} | grep "{" | tee out3 &&
     test $(wc -l out3 | cut -d" " -f1,1) -eq 5
 '
 
 test_expect_success 'match-without-allocating -n succeeds when n>max' '
     flux ion-resource match without_allocating -n9999 ${jobspec} | \
-        grep "{" > out4 &&
+        grep "{" | tee out4 &&
     test $(wc -l out4 | cut -d" " -f1,1) -eq 6
 '
 
@@ -88,7 +87,7 @@ policy=low maximum-matches=6
 '
 
 test_expect_success 'match-without-allocating matches different resources with policy=low' '
-    flux ion-resource match without_allocating -n4 ${jobspec} | grep -o "{.*starttime" > out5 &&
+    flux ion-resource match without_allocating -n4 ${jobspec} | grep -o "{.*starttime" | tee out5 &&
     test_expect_code 1 diff out1 out5
 '
 
