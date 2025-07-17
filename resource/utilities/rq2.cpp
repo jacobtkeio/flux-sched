@@ -56,7 +56,7 @@ command_t commands[] = {{"match",
                          match,
                          "Allocate or reserve matching resources (subcmd: "
                          "allocate | allocate_with_satisfiability | allocate_orelse_reserve) | "
-                         "satisfiability: "
+                         "satisfiability | without_allocating: "
                          "resource-query> match allocate jobspec"},
                         {"info", "i", info, "Print info on a jobid: resource-query> info jobid"},
                         {"cancel",
@@ -274,6 +274,7 @@ static void print_schedule_info (resource_query_t &ctx,
                                  uint64_t jobid,
                                  const std::string &jobspec_fn,
                                  bool matched,
+                                 bool allocated,
                                  int64_t at,
                                  bool sat,
                                  double elapse,
@@ -284,7 +285,11 @@ static void print_schedule_info (resource_query_t &ctx,
     if (matched) {
         job_lifecycle_t st;
         std::shared_ptr<job_info_t> job = nullptr;
-        std::string mode = (at == 0) ? "ALLOCATED" : "RESERVED";
+        std::string mode;
+        if (!allocated)
+                mode = "MATCHED";
+        else
+            mode = (at == 0) ? "ALLOCATED" : "RESERVED";
         std::string scheduled_at = (at == 0) ? "Now" : std::to_string (at);
         out << "INFO:"
             << " =============================" << std::endl;
@@ -304,7 +309,10 @@ static void print_schedule_info (resource_query_t &ctx,
         }
         out << "INFO:"
             << " =============================" << std::endl;
-        st = (at == 0) ? job_lifecycle_t::ALLOCATED : job_lifecycle_t::RESERVED;
+        if (!allocated)
+                st = job_lifecycle_t::MATCHED;
+        else
+            st = (at == 0) ? job_lifecycle_t::ALLOCATED : job_lifecycle_t::RESERVED;
         if (reapi_cli_t::info (&ctx, jobid, job) == 0)
             job->jobspec_fn = jobspec_fn;
     } else {
@@ -377,6 +385,8 @@ int match (resource_query_t &ctx, std::vector<std::string> &args, json_t *params
         match_op = match_op_t::MATCH_ALLOCATE_W_SATISFIABILITY;
     } else if (subcmd == "satisfiability") {
         match_op = match_op_t::MATCH_SATISFIABILITY;
+    } else if (subcmd == "without_allocating") {
+        match_op = match_op_t::MATCH_WITHOUT_ALLOCATING;
     } else {
         std::cerr << "ERROR: unknown subcmd " << args[1] << std::endl;
         return 0;
@@ -414,18 +424,19 @@ int match (resource_query_t &ctx, std::vector<std::string> &args, json_t *params
         return 0;
     }
 
-    if (subcmd != "satisfiability")
+    if (subcmd == "satisfiability")
+        print_sat_info (ctx, out, sat, ov, json_object_get (params, "elapse_time"));
+    else
         print_schedule_info (ctx,
                              out,
                              jobid,
                              jobspec_fn,
                              matched,
+                             subcmd != "without_allocating",
                              at,
                              sat,
                              ov,
                              json_object_get (params, "elapse_time"));
-    else
-        print_sat_info (ctx, out, sat, ov, json_object_get (params, "elapse_time"));
 
     jobspec_in.close ();
 
