@@ -37,14 +37,14 @@ command_t commands[] =
       cmd_match,
       "Allocate or reserve matching resources (subcmd: "
       "allocate | allocate_with_satisfiability | allocate_orelse_reserve) | "
-      "satisfiability: "
+      "satisfiability | without_allocating: "
       "resource-query> match allocate jobspec"},
      {"multi-match",
       "M",
       cmd_match_multi,
       "Allocate or reserve for "
       "multiple jobspecs (subcmd: allocate | allocate_with_satisfiability | "
-      "allocate_orelse_reserve): "
+      "allocate_orelse_reserve | without_allocating): "
       "resource-query> multi-match allocate jobspec1 jobspec2 ..."},
      {"update",
       "u",
@@ -284,6 +284,12 @@ static int run_match (std::shared_ptr<resource_context_t> &ctx,
                                    match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE,
                                    (int64_t)jobid,
                                    &at);
+    else if (cmd == "without_allocating")
+        rc2 = ctx->traverser->run (job,
+                                   ctx->writers,
+                                   match_op_t::MATCH_WITHOUT_ALLOCATING,
+                                   (int64_t)jobid,
+                                   &at);
     else if (cmd == "satisfiability")
         rc2 = ctx->traverser->run (job,
                                    ctx->writers,
@@ -316,7 +322,7 @@ static int run_match (std::shared_ptr<resource_context_t> &ctx,
     postorder_count = ctx->traverser->get_total_postorder_count ();
     update_match_perf (ctx, elapse);
 
-    if (cmd != "satisfiability")
+    if (cmd != "satisfiability" && cmd != "without_allocating")
         print_schedule_info (ctx,
                              out,
                              jobid,
@@ -342,7 +348,8 @@ int cmd_match (std::shared_ptr<resource_context_t> &ctx, std::vector<std::string
     }
     std::string subcmd = args[1];
     if (!(subcmd == "allocate" || subcmd == "allocate_orelse_reserve"
-          || subcmd == "allocate_with_satisfiability" || subcmd == "satisfiability")) {
+          || subcmd == "allocate_with_satisfiability" || subcmd == "satisfiability"
+          || subcmd == "without_allocating")) {
         std::cerr << "ERROR: unknown subcmd " << args[1] << std::endl;
         return 0;
     }
