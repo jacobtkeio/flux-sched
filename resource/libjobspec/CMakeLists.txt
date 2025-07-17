@@ -14,6 +14,7 @@ target_link_libraries(jobspec_conv PUBLIC flux::hostlist flux::idset
     flux::core yaml-cpp PkgConfig::JANSSON 
     PkgConfig::UUID
     fluxion-data
+    libcuckoo
     )
 
 add_executable(flux-jobspec-validate

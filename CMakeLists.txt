@@ -234,6 +234,7 @@ add_subdirectory( etc )
 add_subdirectory( src )
 add_subdirectory( resource )
 add_subdirectory( qmanager )
+add_subdirectory( external )
 add_subdirectory( doc )
 add_subdirectory( t )
 

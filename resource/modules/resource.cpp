@@ -903,6 +903,12 @@ static void set_property_request_cb (flux_t *h,
             ctx->db->resource_graph[v].properties.insert (
                 std::pair<std::string, std::string> (property_key, property_value));
         }
+
+        if (!ctx->db->resource_graph[v].prop_filter->insert_or_assign(property_key, property_value)) {
+            errno = EINVAL;
+            errmsg = "prop_filter insert_or_assign failed";
+            goto error;
+        }
     }
 
     if (flux_respond_pack (h, msg, "{}") < 0)

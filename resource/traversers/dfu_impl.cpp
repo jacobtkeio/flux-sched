@@ -15,8 +15,10 @@ extern "C" {
 }
 
 #include "resource/traversers/dfu_impl.hpp"
-#include <optional>
+#include "resource/libjobspec/constraint.cpp"
 #include <boost/iterator/transform_iterator.hpp>
+#include <libcuckoo/cuckoohash_map.hh>
+#include <optional>
 
 using namespace Flux::Jobspec;
 using namespace Flux::resource_model;
@@ -226,6 +228,19 @@ int dfu_impl_t::prune (const jobmeta_t &meta,
         && !meta.constraint->match ((*m_graph)[u])) {
         rc = -1;
         goto done;
+    }
+    const PropertyConstraint *constraint;
+    if ((constraint = dynamic_cast<const PropertyConstraint *> (meta.constraint.get ())) != nullptr) {
+        YAML::Node node = constraint->as_yaml ()["properties"];
+        YAML::Node::iterator it;
+        // Prune if the property is likely present in the subtree
+        for (it = node.begin (); it != node.end (); it++) {
+            std::string prop = (*it).as<std::string> ();
+            if ((*m_graph)[u].prop_filter->contains (prop) == (prop[0] == '^')) {
+                rc = -1;
+                goto done;
+            }
+        }
     }
     // if rack has been allocated exclusively, no reason to descend further.
     if ((rc = by_avail (meta, s, u, resources)) == -1)

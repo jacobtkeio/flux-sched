@@ -93,6 +93,7 @@ target_link_libraries(resource PUBLIC
     PkgConfig::UUID
     Boost::graph
     jobspec_conv
+    libcuckoo
     )
 add_sanitizers(resource)
 
