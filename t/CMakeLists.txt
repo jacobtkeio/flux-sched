@@ -69,6 +69,8 @@ set(ALL_TESTS
   t3035-resource-remove.t
   t3036-rq2.t
   t3037-resource-custom-policy.t
+  t3040-property-benchmark.t
+  t3041-property-benchmark-ne.t
   t3300-system-dontblock.t
   t3301-system-latestart.t
   t4000-match-params.t
