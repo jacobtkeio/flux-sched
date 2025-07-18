@@ -1410,9 +1410,10 @@ out:
     return rc;
 }
 
-static int run (std::shared_ptr<resource_ctx_t> &ctx,
+static int run (std::shared_ptr<match_writers_t> &writers,
+                std::shared_ptr<dfu_traverser_t> &tr,
                 int64_t jobid,
-                const char *cmd,
+                match_op_t op,
                 const std::string &jstr,
                 int64_t *at,
                 flux_error_t *errp)
@@ -1420,21 +1421,7 @@ static int run (std::shared_ptr<resource_ctx_t> &ctx,
     int rc = -1;
     try {
         Flux::Jobspec::Jobspec j{jstr};
-
-        dfu_traverser_t &tr = *(ctx->traverser);
-
-        if (std::string ("allocate") == cmd)
-            rc = tr.run (j, ctx->writers, match_op_t::MATCH_ALLOCATE, jobid, at);
-        else if (std::string ("allocate_with_satisfiability") == cmd)
-            rc = tr.run (j, ctx->writers, match_op_t::MATCH_ALLOCATE_W_SATISFIABILITY, jobid, at);
-        else if (std::string ("allocate_orelse_reserve") == cmd)
-            rc = tr.run (j, ctx->writers, match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE, jobid, at);
-        else if (std::string ("satisfiability") == cmd)
-            rc = tr.run (j, ctx->writers, match_op_t::MATCH_SATISFIABILITY, jobid, at);
-        else if (std::string ("without_allocating") == cmd)
-            rc = tr.run (j, ctx->writers, match_op_t::MATCH_WITHOUT_ALLOCATING, jobid, at);
-        else
-            errno = EINVAL;
+        rc = tr->run (j, writers, op, jobid, at);
     } catch (const Flux::Jobspec::parse_error &e) {
         errno = EINVAL;
         if (errp && e.what ()) {
@@ -1517,9 +1504,8 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
     bool rsv = false;
 
     start = std::chrono::system_clock::now ();
-    if (strcmp ("allocate", cmd) != 0 && strcmp ("allocate_orelse_reserve", cmd) != 0
-        && strcmp ("allocate_with_satisfiability", cmd) != 0 && strcmp ("satisfiability", cmd) != 0
-        && strcmp ("without_allocating", cmd) != 0) {
+    match_op_t op = string_to_match_op (cmd);
+    if (!match_op_valid (op)) {
         rc = -1;
         errno = EINVAL;
         flux_log (ctx->h, LOG_ERR, "%s: unknown cmd: %s", __FUNCTION__, cmd);
@@ -1528,7 +1514,7 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
-    if ((rc = run (ctx, jobid, cmd, jstr, at, errp)) < 0) {
+    if ((rc = run (ctx->writers, ctx->traverser, jobid, op, jstr, at, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
         update_match_perf (*overhead, jobid, false);
