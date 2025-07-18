@@ -37,6 +37,7 @@ class resource_prop_t {
     const resource_prop_t &get_resource_prop () const;
     const int get_update_interval () const;
     const int get_maximum_matches () const;
+    const int get_match_lookahead () const;
 
     void set_load_file (const std::string &o);
     bool set_load_format (const std::string &o);
@@ -49,6 +50,7 @@ class resource_prop_t {
     void add_to_prune_filters (const std::string &o);
     void set_update_interval (const int i);
     void set_maximum_matches (const int i);
+    void set_match_lookahead (const int i);
 
     bool is_load_file_set () const;
     bool is_load_format_set () const;
@@ -60,6 +62,7 @@ class resource_prop_t {
     bool is_prune_filters_set () const;
     bool is_update_interval_set () const;
     bool is_maximum_matches_set () const;
+    bool is_match_lookahead_set () const;
 
     json_t *jsonify () const;
 
@@ -74,6 +77,7 @@ class resource_prop_t {
     std::string m_prune_filters = RESOURCE_OPTS_UNSET_STR;
     int m_update_interval = 0;
     int m_maximum_matches = 0;
+    int m_match_lookahead = 0;
 };
 
 /*! resource match option set class
@@ -91,6 +95,7 @@ class resource_opts_t : public optmgr_parse_t, public resource_prop_t {
         PRUNE_FILTERS = 70,     // prune-filter
         UPDATE_INTERVAL = 80,   // update-interval
         MAXIMUM_MATCHES = 90,   // maximum-matches
+        MATCH_LOOKAHEAD = 100,
         UNKNOWN = 5000
     };
 

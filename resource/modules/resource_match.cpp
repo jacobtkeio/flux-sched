@@ -1501,6 +1501,18 @@ out:
     return rc;
 }
 
+static const int64_t seek_match (int64_t at,
+                                 int current_match,
+                                 int64_t total_matches,
+                                 int64_t lookahead,
+                                 std::string seek_type = "sequential")
+{
+    if (seek_type == std::string ("exponential"))
+        return (int)(at + ceil (lookahead * exp ((6 * current_match / (double)total_matches) - 6)));
+    else
+        return (int)(at + ceil (lookahead / (double)total_matches));
+}
+
 static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
                                          int64_t jobid,
                                          const std::string &jstr,
@@ -1515,6 +1527,7 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::duration<double> elapsed;
     std::chrono::duration<int64_t> epoch;
+    int match_lookahead = ctx->opts.get_opt ().get_match_lookahead ();
     int max_matches = ctx->opts.get_opt ().get_maximum_matches ();
     int64_t match_time = *at;
 
@@ -1540,7 +1553,11 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
             if (errno == EBUSY) {
                 m--;  // This match failed, so keep looking
                 errno = 0;
-                match_time += 1;
+                match_time = seek_match (match_time,
+                                         m,
+                                         num_matches,
+                                         match_lookahead,
+                                         std::string ("sequential"));
                 continue;
             } else {
                 elapsed = std::chrono::system_clock::now () - start;
@@ -1563,7 +1580,8 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
             *at = match_time;
 
         // Look ahead to avoid matching the same resources
-        match_time += 1;
+        match_time =
+            seek_match (match_time, m, num_matches, match_lookahead, std::string ("sequential"));
     }
 
 done:

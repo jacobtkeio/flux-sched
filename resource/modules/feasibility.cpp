@@ -40,6 +40,7 @@ static void set_default_args (std::shared_ptr<resource_ctx_t> &ctx)
     ct_opts.set_match_format ("rv1_nosched");
     ct_opts.set_update_interval (0);
     ct_opts.set_maximum_matches (1);
+    ct_opts.set_match_lookahead (300);
     ctx->opts += ct_opts;
 }
 

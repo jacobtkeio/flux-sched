@@ -77,6 +77,11 @@ const int resource_prop_t::get_maximum_matches () const
     return m_maximum_matches;
 }
 
+const int resource_prop_t::get_match_lookahead () const
+{
+    return m_match_lookahead;
+}
+
 void resource_prop_t::set_load_file (const std::string &p)
 {
     m_load_file = p;
@@ -142,6 +147,11 @@ void resource_prop_t::set_maximum_matches (const int i)
     m_maximum_matches = i;
 }
 
+void resource_prop_t::set_match_lookahead (const int i)
+{
+    m_match_lookahead = i;
+}
+
 bool resource_prop_t::is_load_file_set () const
 {
     return m_load_file != RESOURCE_OPTS_UNSET_STR;
@@ -192,9 +202,13 @@ bool resource_prop_t::is_maximum_matches_set () const
     return m_maximum_matches != 0;
 }
 
+bool resource_prop_t::is_match_lookahead_set () const
+{
+    return m_match_lookahead != 0;
+}
 json_t *resource_prop_t::jsonify () const
 {
-    return json_pack ("{ s:s? s:s? s:s? s:s? s:s? s:s? s:i s:s? s:i s:i }",
+    return json_pack ("{ s:s? s:s? s:s? s:s? s:s? s:s? s:i s:s? s:i s:i s:i}",
                       "load-file",
                       is_load_file_set () ? get_load_file ().c_str () : nullptr,
                       "load-format",
@@ -214,7 +228,9 @@ json_t *resource_prop_t::jsonify () const
                       "update-interval",
                       is_update_interval_set () ? get_update_interval () : 0,
                       "maximum-matches",
-                      is_maximum_matches_set () ? get_maximum_matches () : 0);
+                      is_maximum_matches_set () ? get_maximum_matches () : 0,
+                      "match-lookahead",
+                      is_match_lookahead_set () ? get_match_lookahead () : 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,6 +316,11 @@ resource_opts_t::resource_opts_t ()
                                      static_cast<int> (
                                          resource_opts_t ::resource_opts_key_t ::MAXIMUM_MATCHES)));
     inserted &= ret.second;
+    ret = m_tab.insert (
+        std::pair<std::string, int> ("match-lookahead",
+                                     static_cast<int> (
+                                         resource_opts_t ::resource_opts_key_t ::MATCH_LOOKAHEAD)));
+    inserted &= ret.second;
 
     if (!inserted)
         throw std::bad_alloc ();
@@ -334,6 +355,8 @@ resource_opts_t &resource_opts_t::operator+= (const resource_opts_t &src)
         set_update_interval (src.get_update_interval ());
     if (src.is_maximum_matches_set ())
         set_maximum_matches (src.get_maximum_matches ());
+    if (src.is_match_lookahead_set ())
+        set_match_lookahead (src.get_match_lookahead ());
     return *this;
 }
 
@@ -449,6 +472,15 @@ int resource_opts_t::parse (const std::string &k, const std::string &v, std::str
                 int s = std::stoi (v);
                 if (!(s <= 0 || s > 2000000)) {
                     set_maximum_matches (s);
+                }
+            }
+            break;
+
+        case static_cast<int> (resource_opts_key_t::MATCH_LOOKAHEAD):
+            if (is_number (v)) {
+                int s = std::stoi (v);
+                if (!(s <= 0 || s > 2000000)) {
+                    set_match_lookahead (s);
                 }
             }
             break;
