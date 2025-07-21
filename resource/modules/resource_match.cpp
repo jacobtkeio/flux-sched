@@ -1514,6 +1514,7 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::duration<double> elapsed;
     std::chrono::duration<int64_t> epoch;
+    std::string match_seek_type = ctx->opts.get_opt ().get_match_seek_type ();
     int match_lookahead = ctx->opts.get_opt ().get_match_lookahead ();
     int max_matches = ctx->opts.get_opt ().get_maximum_matches ();
     int64_t match_time = *at;
@@ -1547,11 +1548,8 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
             if (errno == EBUSY) {
                 m--;  // This match failed, so keep looking
                 errno = 0;
-                match_time = seek_match (match_time,
-                                         m,
-                                         num_matches,
-                                         match_lookahead,
-                                         std::string ("sequential"));
+                match_time =
+                    seek_match (match_time, m, num_matches, match_lookahead, match_seek_type);
                 continue;
             } else {
                 elapsed = std::chrono::system_clock::now () - start;
@@ -1574,8 +1572,7 @@ static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
             *at = match_time;
 
         // Look ahead to avoid matching the same resources
-        match_time =
-            seek_match (match_time, m, num_matches, match_lookahead, std::string ("sequential"));
+        match_time = seek_match (match_time, m, num_matches, match_lookahead, match_seek_type);
     }
 
 done:

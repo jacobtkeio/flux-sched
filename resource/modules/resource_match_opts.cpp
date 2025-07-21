@@ -82,6 +82,11 @@ const int resource_prop_t::get_match_lookahead () const
     return m_match_lookahead;
 }
 
+const std::string &resource_prop_t::get_match_seek_type () const
+{
+    return m_match_seek_type;
+}
+
 void resource_prop_t::set_load_file (const std::string &p)
 {
     m_load_file = p;
@@ -152,6 +157,11 @@ void resource_prop_t::set_match_lookahead (const int i)
     m_match_lookahead = i;
 }
 
+void resource_prop_t::set_match_seek_type (const std::string &p)
+{
+    m_match_seek_type = p;
+}
+
 bool resource_prop_t::is_load_file_set () const
 {
     return m_load_file != RESOURCE_OPTS_UNSET_STR;
@@ -206,9 +216,15 @@ bool resource_prop_t::is_match_lookahead_set () const
 {
     return m_match_lookahead != 0;
 }
+
+bool resource_prop_t::is_match_seek_type_set () const
+{
+    return m_match_seek_type != RESOURCE_OPTS_UNSET_STR;
+}
+
 json_t *resource_prop_t::jsonify () const
 {
-    return json_pack ("{ s:s? s:s? s:s? s:s? s:s? s:s? s:i s:s? s:i s:i s:i}",
+    return json_pack ("{ s:s? s:s? s:s? s:s? s:s? s:s? s:i s:s? s:i s:i s:i s:s?}",
                       "load-file",
                       is_load_file_set () ? get_load_file ().c_str () : nullptr,
                       "load-format",
@@ -230,7 +246,9 @@ json_t *resource_prop_t::jsonify () const
                       "maximum-matches",
                       is_maximum_matches_set () ? get_maximum_matches () : 0,
                       "match-lookahead",
-                      is_match_lookahead_set () ? get_match_lookahead () : 0);
+                      is_match_lookahead_set () ? get_match_lookahead () : 0,
+                      "match-seek-type",
+                      is_match_seek_type_set () ? get_match_seek_type ().c_str () : nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -321,6 +339,11 @@ resource_opts_t::resource_opts_t ()
                                      static_cast<int> (
                                          resource_opts_t ::resource_opts_key_t ::MATCH_LOOKAHEAD)));
     inserted &= ret.second;
+    ret = m_tab.insert (
+        std::pair<std::string, int> ("match-seek-type",
+                                     static_cast<int> (
+                                         resource_opts_t ::resource_opts_key_t ::MATCH_SEEK_TYPE)));
+    inserted &= ret.second;
 
     if (!inserted)
         throw std::bad_alloc ();
@@ -357,6 +380,8 @@ resource_opts_t &resource_opts_t::operator+= (const resource_opts_t &src)
         set_maximum_matches (src.get_maximum_matches ());
     if (src.is_match_lookahead_set ())
         set_match_lookahead (src.get_match_lookahead ());
+    if (src.is_match_seek_type_set ())
+        set_match_seek_type (src.get_match_seek_type ());
     return *this;
 }
 
@@ -483,6 +508,10 @@ int resource_opts_t::parse (const std::string &k, const std::string &v, std::str
                     set_match_lookahead (s);
                 }
             }
+            break;
+
+        case static_cast<int> (resource_opts_key_t::MATCH_SEEK_TYPE):
+            set_match_seek_type (v);
             break;
 
         default:
