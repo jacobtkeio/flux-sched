@@ -526,6 +526,7 @@ vtx_t resource_reader_jgf_t::create_vtx (resource_graph_t &g, const fetch_helper
     g[v].paths = fetcher.paths;
     g[v].schedule.plans = plans;
     g[v].idata.x_checker = x_checker;
+    g[v].prop_filter = new libcuckoo::cuckoohash_map<std::string, std::string> (4);
     for (const auto &kv : g[v].paths)
         g[v].idata.member_of[subsystem_t{kv.first}] = "*";
 

@@ -218,6 +218,7 @@ vtx_t dfs_emitter_t::emit_vertex (ggv_t u,
     g[v].idata.member_of[ssys] = "*";
     g[v].uniq_id = v;
     g[v].rank = m_rank;
+    g[v].prop_filter = new libcuckoo::cuckoohash_map<std::string, std::string> (4);
 
     //
     // Indexing for fast look-up...

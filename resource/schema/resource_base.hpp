@@ -27,8 +27,7 @@ struct resource_t {
     std::string basename;
     std::string name;
     std::map<std::string, std::string> properties;
-    libcuckoo::cuckoohash_map<std::string, std::string> *prop_filter =
-        new libcuckoo::cuckoohash_map<std::string, std::string>;
+    libcuckoo::cuckoohash_map<std::string, std::string> *prop_filter;
     int64_t id = -1;
     int rank = -1;
 };

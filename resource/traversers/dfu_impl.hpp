@@ -157,7 +157,8 @@ class dfu_impl_t {
      */
     int prime_pruning_filter (subsystem_t subsystem,
                               vtx_t u,
-                              std::map<resource_type_t, int64_t> &to_parent);
+                              std::map<resource_type_t, int64_t> &to_parent,
+                              std::vector<std::pair<std::string, std::string>> &prop_to_parent);
 
     /*! Prime the resource section of the jobspec. Aggregate configured
      *  subtree resources into jobspec's user_data.  For example,
@@ -421,7 +422,7 @@ class dfu_impl_t {
                   std::unordered_map<resource_type_t, int64_t> &accum);
 
     // Explore out-edges for priming the subtree plans
-    int prime_exp (subsystem_t subsystem, vtx_t u, std::map<resource_type_t, int64_t> &dfv);
+    int prime_exp (subsystem_t subsystem, vtx_t u, std::map<resource_type_t, int64_t> &dfv, std::vector<std::pair<std::string, std::string>> &prop_to_parent);
 
     // Explore for resource matching -- only DFV or UPV
     int explore (const jobmeta_t &meta,

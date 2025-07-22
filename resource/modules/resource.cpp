@@ -904,11 +904,12 @@ static void set_property_request_cb (flux_t *h,
                 std::pair<std::string, std::string> (property_key, property_value));
         }
 
-        if (!ctx->db->resource_graph[v].prop_filter->insert_or_assign(property_key, property_value)) {
+        if (!ctx->db->resource_graph[v].prop_filter->insert_or_assign (property_key, property_value)) {
             errno = EINVAL;
             errmsg = "prop_filter insert_or_assign failed";
             goto error;
         }
+        ctx->traverser->initialize ();
     }
 
     if (flux_respond_pack (h, msg, "{}") < 0)
@@ -951,6 +952,11 @@ static void remove_property_request_cb (flux_t *h,
 
     for (auto &v : it->second) {
         ctx->db->resource_graph[v].properties.erase (property_key);
+        if (!ctx->db->resource_graph[v].prop_filter->erase (property_key)) {
+            errno = EINVAL;
+            errmsg = "prop_filter erase failed";
+            goto error;
+        }
     }
 
     if (flux_respond_pack (h, msg, "{}") < 0)

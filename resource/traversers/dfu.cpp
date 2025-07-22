@@ -326,6 +326,7 @@ int dfu_traverser_t::initialize ()
     detail::dfu_impl_t::reset_color ();
     for (auto &subsystem : get_match_cb ()->subsystems ()) {
         std::map<resource_type_t, int64_t> from_dfv;
+        std::vector<std::pair<std::string, std::string>> prop_to_parent;
         if (get_graph_db ()->metadata.roots.find (subsystem)
             == get_graph_db ()->metadata.roots.end ()) {
             errno = ENOTSUP;
@@ -333,7 +334,7 @@ int dfu_traverser_t::initialize ()
             break;
         }
         root = get_graph_db ()->metadata.roots.at (subsystem);
-        rc += detail::dfu_impl_t::prime_pruning_filter (subsystem, root, from_dfv);
+        rc += detail::dfu_impl_t::prime_pruning_filter (subsystem, root, from_dfv, prop_to_parent);
     }
     m_initialized = (rc == 0) ? true : false;
     return rc;

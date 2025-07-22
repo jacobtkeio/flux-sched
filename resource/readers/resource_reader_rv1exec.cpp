@@ -110,6 +110,7 @@ vtx_t resource_reader_rv1exec_t::add_vertex (resource_graph_t &g,
     g[v].idata.member_of[subsys] = "*";
     g[v].status = resource_pool_t::status_t::UP;
     g[v].properties = props;
+    g[v].prop_filter = new libcuckoo::cuckoohash_map<std::string, std::string> (4);
 
     // Indexing for fast look-up
     m.by_path[g[v].paths[subsys]].push_back (v);

@@ -229,19 +229,20 @@ int dfu_impl_t::prune (const jobmeta_t &meta,
         rc = -1;
         goto done;
     }
+
     const PropertyConstraint *constraint;
     if ((constraint = dynamic_cast<const PropertyConstraint *> (meta.constraint.get ())) != nullptr) {
         YAML::Node node = constraint->as_yaml ()["properties"];
-        YAML::Node::iterator it;
         // Prune if the property is likely present in the subtree
-        for (it = node.begin (); it != node.end (); it++) {
-            std::string prop = (*it).as<std::string> ();
+        for (YAML::const_iterator it = node.begin (); it != node.end (); it++) {
+            const std::string prop = (*it).as<std::string> ();
             if ((*m_graph)[u].prop_filter->contains (prop) == (prop[0] == '^')) {
                 rc = -1;
                 goto done;
             }
         }
     }
+
     // if rack has been allocated exclusively, no reason to descend further.
     if ((rc = by_avail (meta, s, u, resources)) == -1)
         goto done;
@@ -412,14 +413,14 @@ int dfu_impl_t::accum_if (subsystem_t subsystem,
     return rc;
 }
 
-int dfu_impl_t::prime_exp (subsystem_t subsystem, vtx_t u, std::map<resource_type_t, int64_t> &dfv)
+int dfu_impl_t::prime_exp (subsystem_t subsystem, vtx_t u, std::map<resource_type_t, int64_t> &dfv, std::vector<std::pair<std::string, std::string>> &prop_to_parent)
 {
     int rc = 0;
     f_out_edg_iterator_t ei, ei_end;
     for (tie (ei, ei_end) = out_edges (u, *m_graph); ei != ei_end; ++ei) {
         if (stop_explore (*ei, subsystem) || !in_subsystem (*ei, subsystem))
             continue;
-        if ((rc = prime_pruning_filter (subsystem, target (*ei, *m_graph), dfv)) != 0)
+        if ((rc = prime_pruning_filter (subsystem, target (*ei, *m_graph), dfv, prop_to_parent)) != 0)
             break;
     }
     return rc;
@@ -1129,7 +1130,8 @@ int dfu_impl_t::reset_exclusive_resource_types (const std::set<resource_type_t> 
 
 int dfu_impl_t::prime_pruning_filter (subsystem_t s,
                                       vtx_t u,
-                                      std::map<resource_type_t, int64_t> &to_parent)
+                                      std::map<resource_type_t, int64_t> &to_parent,
+                                      std::vector<std::pair<std::string, std::string>> &prop_to_parent)
 {
     int rc = -1;
     int saved_errno = errno;
@@ -1149,11 +1151,14 @@ int dfu_impl_t::prime_pruning_filter (subsystem_t s,
         goto done;
     }
 
-    if (prime_exp (s, u, dfv) != 0)
+    if (prime_exp (s, u, dfv, prop_to_parent) != 0)
         goto done;
 
     for (auto &aggr : dfv)
         accum_if (s, aggr.first, aggr.second, to_parent);
+
+    for (auto &propp : prop_to_parent)
+        (*m_graph)[u].prop_filter->insert_or_assign (propp.first, propp.second);
 
     if (m_match->get_my_pruning_types (s, (*m_graph)[u].type, out_prune_types)) {
         for (auto &type : out_prune_types) {
