@@ -1487,6 +1487,103 @@ out:
     return rc;
 }
 
+static int run_match_without_allocating (std::shared_ptr<resource_ctx_t> &ctx,
+                                         int64_t jobid,
+                                         const std::string &jstr,
+                                         int64_t *now,
+                                         int64_t *at,
+                                         double *overhead,
+                                         std::stringstream &o,
+                                         flux_error_t *errp)
+{
+    int rc = 0;
+    int64_t maximum_duration = std::numeric_limits<int64_t>::max ();
+    std::chrono::time_point<std::chrono::system_clock> start;
+    std::chrono::duration<double> elapsed;
+    std::chrono::duration<int64_t> epoch;
+    match_writers_factory_t match_writer_factory;
+    std::shared_ptr<vertex_match_writers_t> vtx_writer =
+        std::make_shared<vertex_match_writers_t> ();
+    std::vector<std::shared_ptr<match_writers_t>> writers = {ctx->writers, vtx_writer};
+
+    start = std::chrono::system_clock::now ();
+
+    if ((rc = run (writers,
+                   ctx->traverser,
+                   jobid,
+                   match_op_t::MATCH_WITHOUT_ALLOCATING,
+                   jstr,
+                   at,
+                   errp))
+        < 0) {
+        elapsed = std::chrono::system_clock::now () - start;
+        *overhead = elapsed.count ();
+        update_match_perf (*overhead, jobid, false);
+        goto done;
+    }
+
+    // Find the maximum duration for which the matched resources are unallocated
+    for (auto u : vtx_writer->get_vertices ()) {
+        planner_t *p = ctx->db->resource_graph[u].schedule.plans;
+        int64_t tip = planner_avail_time_first (p, *at + 1, 1, 1);
+        int64_t end = *at;
+        if (tip < *at) {
+            if (errno == ENOENT) {
+                flux_log (ctx->h, LOG_DEBUG, "%s: reached end of planner", __FUNCTION__);
+                int64_t pdur = planner_duration (p);
+                if (pdur > 0) {
+                    end = planner_base_time (p) + pdur;  // Planner end
+                } else {
+                    rc = -1;
+                    flux_log_error (ctx->h, "%s: planner_duration == %lld", __FUNCTION__, pdur);
+                    goto done;
+                }
+            } else {
+                rc = -1;
+                flux_log_error (ctx->h, "%s: planner_avail_time_first", __FUNCTION__);
+                goto done;
+            }
+        } else {  // Binary search for last available time
+            int64_t left = *at;
+            int64_t right = tip;
+            while (right - left > 0) {
+                if (planner_avail_during (p, left, (left + right) / 2, 1)) {
+                    left = (left + right) / 2 + 1;
+                } else {
+                    right = (left + right) / 2 - 1;
+                }
+            }
+            end = left;  // Integer division causes only left to be 100% correct
+        }
+
+        // The maximum duration is the minimum of all component durations
+        if (maximum_duration > end - *at)
+            maximum_duration = end - *at;
+    }
+    if (maximum_duration == std::numeric_limits<int64_t>::max () || maximum_duration < 1) {
+        rc = -1;
+        flux_log_error (ctx->h, "%s: maximum_duration OOB: %lld", __FUNCTION__, maximum_duration);
+        goto done;
+    }
+
+    // Update the matched resources with their extended, maximum duration
+    if ((rc = ctx->writers->emit_tm (*at, maximum_duration)) < 0) {
+        flux_log_error (ctx->h, "%s: emit_tm", __FUNCTION__);
+        goto done;
+    }
+    if ((rc = ctx->writers->emit (o)) < 0) {
+        flux_log_error (ctx->h, "%s: writer can't emit", __FUNCTION__);
+        goto done;
+    }
+
+    elapsed = std::chrono::system_clock::now () - start;
+    *overhead = elapsed.count ();
+    update_match_perf (*overhead, jobid, true);
+
+done:
+    return rc;
+}
+
 int run_match (std::shared_ptr<resource_ctx_t> &ctx,
                int64_t jobid,
                const char *cmd,
@@ -1515,6 +1612,9 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
+    if (std::string ("without_allocating") == cmd)
+        return run_match_without_allocating (ctx, jobid, jstr, now, at, overhead, o, errp);
+
     if ((rc = run (writers, ctx->traverser, jobid, op, jstr, at, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
