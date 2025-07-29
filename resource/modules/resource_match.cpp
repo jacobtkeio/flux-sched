@@ -1410,7 +1410,7 @@ out:
     return rc;
 }
 
-static int run (std::shared_ptr<match_writers_t> &writers,
+static int run (std::vector<std::shared_ptr<match_writers_t>> &writers,
                 std::shared_ptr<dfu_traverser_t> &tr,
                 int64_t jobid,
                 match_op_t op,
@@ -1498,6 +1498,7 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
                flux_error_t *errp)
 {
     int rc = 0;
+    std::vector<std::shared_ptr<match_writers_t>> writers = {ctx->writers};
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::duration<double> elapsed;
     std::chrono::duration<int64_t> epoch;
@@ -1514,7 +1515,7 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
-    if ((rc = run (ctx->writers, ctx->traverser, jobid, op, jstr, at, errp)) < 0) {
+    if ((rc = run (writers, ctx->traverser, jobid, op, jstr, at, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
         update_match_perf (*overhead, jobid, false);
