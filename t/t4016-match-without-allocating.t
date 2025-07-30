@@ -12,6 +12,8 @@ jobspec="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/test001.yaml"
 malform="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/bad.yaml"
 duration_too_large="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/duration/test001.yaml"
 duration_negative="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/duration/test002.yaml"
+commands="${SHARNESS_TEST_SRCDIR}/data/resource/commands/match_extend/cmds01.in"
+query="../../resource/utilities/resource-query"
 
 test_under_flux 1
 
@@ -90,8 +92,30 @@ test_expect_success 'match-without-allocating matches different resources with p
     test_expect_code 1 diff match1.out matchlow.out
 '
 
+# There are no future jobs, so the matched resources should be valid until graph end
+test_expect_success 'match-wo-alloc extends returned resources past equivalent match-allocate' '
+    flux ion-resource match without_allocating ${jobspec} |\
+grep -o "{.*" | jq ".execution.expiration" > matchwoalloc.out &&
+    sleep 1 && flux ion-resource match allocate ${jobspec} |\
+grep -o "{.*" | jq ".execution.expiration" > matchallocate1.out &&
+    sleep 1 && flux ion-resource match allocate ${jobspec} |\
+grep -o "{.*" | jq ".execution.expiration" > matchallocate2.out &&
+    python3 -c "exit(not($(cat matchwoalloc.out) > $(cat matchallocate1.out)))" && # Succeed if >
+    python3 -c "exit(not($(cat matchallocate1.out) < $(cat matchallocate2.out)))"  # Succeed if <
+'
+
 test_expect_success 'removing resource works' '
     remove_resource
+'
+
+# Verify that the match_without_allocating got extended until the second reservation.
+# i.e. the expiration of the second reservation minus the expiration of the match_wo_alloc
+# equals the total duration of the second reservation.
+test_expect_success 'match-wo-alloc extends returned resource until the next allocation' '
+    sed "s~@TEST_SRCDIR@~${SHARNESS_TEST_SRCDIR}~g" ${commands} > cmds001 &&
+    ${query} -L${grug} -f grug -F rv1 -S CA -P low -t rq.out < cmds001 &&
+    cat rq.out | grep "{.*" | jq ".execution.expiration" |\
+python3 ${SHARNESS_TEST_SRCDIR}/python/t4016-match-got-extended.py
 '
 
 test_done
