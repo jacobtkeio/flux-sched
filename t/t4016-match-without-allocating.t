@@ -93,6 +93,15 @@ test_expect_success 'match-without-allocating matches different resources with p
     test_expect_code 1 diff match1.out matchlow.out
 '
 
+# There are no future jobs, so the matched resources should be valid until graph end
+test_expect_success 'match-without-allocating extends returned resources past equivalent match-allocate' '
+    flux ion-resource match without_allocating ${jobspec} | grep -o "{.*" > matchwoalloc.out &&
+    sleep 1 && flux ion-resource match allocate ${jobspec} | grep -o "{.*" > matchallocate1.out &&
+    sleep 1 && flux ion-resource match allocate ${jobspec} | grep -o "{.*" > matchallocate2.out &&
+    test $(jq ".execution.expiration" matchwoalloc.out) -gt $(jq ".execution.expiration" matchallocate1.out) &&
+    test $(jq ".execution.expiration" matchallocate1.out) -lt $(jq ".execution.expiration" matchallocate2.out)
+'
+
 test_expect_success 'removing resource works' '
     remove_resource
 '
