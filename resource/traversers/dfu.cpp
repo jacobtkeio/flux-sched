@@ -397,10 +397,11 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           match_op_t op,
                           int64_t jobid,
                           int64_t *at,
+                          std::stringstream &o,
                           int64_t num_matches)
 {
     std::vector<std::shared_ptr<match_writers_t>> writers = {writer};
-    return run (jobspec, writers, op, jobid, at, num_matches);
+    return run (jobspec, writers, op, jobid, at, o, num_matches);
 }
 
 int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
@@ -408,6 +409,7 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           match_op_t op,
                           int64_t jobid,
                           int64_t *at,
+                          std::stringstream &o,
                           int64_t num_matches)
 {
     // Clear the error message to disambiguate errors

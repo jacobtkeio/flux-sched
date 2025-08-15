@@ -84,7 +84,7 @@ int reapi_cli_t::match_allocate (void *h,
             goto out;
         }
 
-        rc = rq->traverser_run (job, match_op, (int64_t)jobid, at);
+        rc = rq->traverser_run (job, match_op, (int64_t)jobid, at, o);
 
         if (rq->get_traverser_err_msg () != "") {
             m_err_msg += __FUNCTION__;
@@ -112,12 +112,6 @@ int reapi_cli_t::match_allocate (void *h,
     if ((rc == 0) && (match_op != match_op_t::MATCH_SATISFIABILITY)) {
         matched = true;
         errno = 0;
-    }
-
-    if ((rc = rq->writers->emit (o)) < 0) {
-        m_err_msg += __FUNCTION__;
-        m_err_msg += ": ERROR: match writer emit: " + std::string (strerror (errno)) + "\n";
-        goto out;
     }
 
     R = o.str ();
@@ -741,9 +735,10 @@ void resource_query_t::incr_job_counter ()
 int resource_query_t::traverser_run (Flux::Jobspec::Jobspec &job,
                                      match_op_t op,
                                      int64_t jobid,
-                                     int64_t &at)
+                                     int64_t &at,
+                                     std::stringstream &o)
 {
-    return traverser->run (job, writers, op, jobid, &at);
+    return traverser->run (job, writers, op, jobid, &at, o);
 }
 
 int resource_query_t::traverser_find (std::string criteria)

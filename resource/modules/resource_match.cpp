@@ -1422,13 +1422,14 @@ static int run (std::shared_ptr<resource_ctx_t> &ctx,
                 const std::string &jstr,
                 int64_t num_matches,
                 int64_t *at,
+                std::stringstream &o,
                 flux_error_t *errp)
 {
     int rc = -1;
     std::vector<std::shared_ptr<match_writers_t>> writers = {ctx->writers};
     try {
         Flux::Jobspec::Jobspec j{jstr};
-        rc = ctx->traverser->run (j, ctx->writers, op, jobid, at, num_matches);
+        rc = ctx->traverser->run (j, ctx->writers, op, jobid, at, o, num_matches);
     } catch (const Flux::Jobspec::parse_error &e) {
         errno = EINVAL;
         if (errp && e.what ()) {
@@ -1546,14 +1547,10 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
     *at = *now = epoch.count ();
-    if ((rc = run (ctx, jobid, op, jstr, num_matches,  at, errp)) < 0) {
+    if ((rc = run (ctx, jobid, op, jstr, num_matches, at, o, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
         *overhead = elapsed.count ();
         update_match_perf (*overhead, jobid, false);
-        goto done;
-    }
-    if ((rc = ctx->writers->emit (o)) < 0) {
-        flux_log_error (ctx->h, "%s: writer can't emit", __FUNCTION__);
         goto done;
     }
 
