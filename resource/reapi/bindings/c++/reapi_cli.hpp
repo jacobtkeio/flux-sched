@@ -92,7 +92,7 @@ class resource_query_t {
     void incr_job_counter ();
 
     /* Run the traverser to match the jobspec */
-    int traverser_run (Flux::Jobspec::Jobspec &job, match_op_t op, int64_t jobid, int64_t &at);
+    int traverser_run (Flux::Jobspec::Jobspec &job, match_op_t op, int64_t jobid, int64_t &at, std::stringstream &o);
     int traverser_find (std::string criteria);
 
     // must be public; results in a deleted stringstream if converted to
