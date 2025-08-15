@@ -398,17 +398,19 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           std::shared_ptr<match_writers_t> &writer,
                           match_op_t op,
                           int64_t jobid,
-                          int64_t *at)
+                          int64_t *at,
+                          std::stringstream &o)
 {
     std::vector<std::shared_ptr<match_writers_t>> writers = {writer};
-    return run (jobspec, writers, op, jobid, at);
+    return run (jobspec, writers, op, jobid, at, o);
 }
 
 int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           std::vector<std::shared_ptr<match_writers_t>> &writers,
                           match_op_t op,
                           int64_t jobid,
-                          int64_t *at)
+                          int64_t *at,
+                          std::stringstream &o)
 {
     // Clear the error message to disambiguate errors
     clear_err_message ();
@@ -490,7 +492,15 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                 }
             }
         }
+
+        // Returns >=0 for success
+        if ((writers[0])->emit (o) < 0)
+            errno = EIO;
+            rc = -1;
+        else
+            rc = 0;
     }
+
     // returns 0 or -1
     rc += detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
 
