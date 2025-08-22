@@ -30,7 +30,8 @@ const std::map<std::string, std::string> policies =
      {"lonodex", "policy=low node_centric=true node_exclusive=true"},
      {"hinodex", "policy=high node_centric=true node_exclusive=true"},
      {"locality", ""},
-     {"variation", ""}};
+     {"variation", ""},
+     {"longest", ""}};
 
 const std::vector<std::string> policy_options = {"policy",
                                                  "node_centric",
@@ -149,6 +150,9 @@ std::shared_ptr<dfu_match_cb_t> create_match_cb (const std::string &policy_reque
         }
         if (policy_requested == "variation") {
             matcher = std::make_shared<var_aware_t> ();
+        }
+        if (policy_requested == "longest") {
+            matcher = std::make_shared<dfu_match_longest_cb_t> ();
         }
 
         if (parse_bool_match_options ("high", policy)) {

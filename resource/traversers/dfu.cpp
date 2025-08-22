@@ -155,6 +155,9 @@ int dfu_traverser_t::schedule (Jobspec::Jobspec &jobspec,
     planner_multi_t *p = NULL;
     subsystem_t dom = get_match_cb ()->dom_subsystem ();
 
+    if (std::is_base_of<dfu_match_longest_cb_t, m_match>::value)
+        m_match.match_time = meta.at;
+
     // precheck to see if enough resources are available for this to be feasible
     if ((rc = request_feasible (meta, op, root, dfv)) < 0)
         goto out;
