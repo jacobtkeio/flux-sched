@@ -18,6 +18,8 @@ extern "C" {
 #include <cerrno>
 #include "resource/traversers/dfu.hpp"
 #include "resource/schema/perf_data.hpp"
+#include "resource/planner/c/planner_multi.h"
+#include "resource/planner/c++/planner.hpp"
 
 using namespace Flux::resource_model;
 using namespace Flux::resource_model::detail;
@@ -431,12 +433,17 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                             graph_duration.graph_end.time_since_epoch ())
                             .count ();
     int64_t match_time = *at;
-    int64_t max_dur;
+    int64_t *avail_array = nullptr;
+    uint64_t *request_array = nullptr;
     detail::jobmeta_t meta;
     vtx_t root = get_graph_db ()->metadata.roots.at (dom);
+    planner_multi_t *planner = get_graph_db ()->resource_graph[root].idata.subplans.at (dom);
+    size_t planner_size = planner_multi_resources_len (planner);
     bool x = detail::dfu_impl_t::exclusivity (jobspec.resources, root);
+    bool has_emitted = false;
     const auto exclusive_types = detail::dfu_impl_t::get_exclusive_resource_types ();
     std::unordered_map<resource_type_t, int64_t> dfv;
+    std::vector<int64_t> temporary_match_spans;
     std::shared_ptr<vertex_match_writers_t> vtx_writer =
         std::make_shared<vertex_match_writers_t> ();
     std::vector<std::shared_ptr<match_writers_t>> combined_writers = writers;
@@ -465,18 +472,20 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
 
     for (int m = 0; m < num_matches; m++) {
         if ((rc = schedule (jobspec, meta, x, op, root, dfv)) != 0)
-            return rc;
+            goto done;
         match_time = meta.at;
         if (match_time == graph_end) {
             detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
             // no schedulable point found even at the end of the time, return EBUSY
             errno = EBUSY;
-            return -1;
+            rc = -1;
+            goto done;
         }
         if (match_time < 0 or match_time > graph_end) {
             detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
             errno = EINVAL;
-            return -1;
+            rc = -1;
+            goto done;
         }
         // If job ends after the resource graph expires, reduce the duration
         // so it coincides with the graph expiration. Note that we could
@@ -489,40 +498,89 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         rc = detail::dfu_impl_t::update (root, combined_writers, meta);
         rc += detail::dfu_impl_t::reset_exclusive_resource_types (exclusive_types);
         if (rc < 0)
-            return rc;
+            goto done;
 
         // Extend the duration of MWOA resources as much as possible
         if (op == match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND) {
-            max_dur = maximum_duration_resources_available (get_graph_db (),
-                                                            vtx_writer->get_vertices (),
-                                                            match_time);
+            meta.duration = maximum_duration_resources_available (get_graph_db (),
+                                                                  vtx_writer->get_vertices (),
+                                                                  match_time);
             // Reached graph end, so return success
-            if (max_dur == 0)
-                return 0;
+            if (meta.duration == 0) {
+                rc = 0;
+                goto done;
+            }
             // A planner error occurred
-            if (max_dur < 0) {
+            if (meta.duration < 0) {
                 errno = EINVAL;
-                return -1;
+                rc = -1;
+                goto done;
             }
             for (auto writer : writers) {
                 // Update the matched resources with their extended, maximum duration
-                if ((rc = writer->emit_tm (match_time, match_time + max_dur)) < 0)
-                    return rc;
+                if ((rc = writer->emit_tm (match_time, match_time + meta.duration)) < 0)
+                    goto done;
             }
-
-            // Start the next match at the end of the current one
-            meta.at = match_time + max_dur;
         }
         // Return the first match time if there are multiple
         if (m == 0)
             *at = match_time;
 
         // Only emit from the first writer in the list
-        if ((rc = (writers[0])->emit (o)) < 0)
+        if ((rc = (writers[0])->emit (o)) < 0) {
             break;
+        } else {
+            has_emitted = true;
+        }
+
+        // Temporarily block previous MWOA matches to prevent duplicate matches
+        if (meta.alloc_type == jobmeta_t::alloc_type_t::AT_NO_ALLOC) {
+            int64_t span_id;
+            if (!(avail_array = (int64_t *)malloc (planner_size * sizeof (int64_t)))) {
+                errno = ENOMEM;
+                rc = -1;
+                goto done;
+            }
+            if ((rc = planner_multi_avail_resources_array_during (planner,
+                                                                  match_time,
+                                                                  meta.duration,
+                                                                  avail_array,
+                                                                  planner_size))
+                != 0) {
+                errno = EINVAL;
+                rc = -1;
+                goto done;
+            }
+            if (!(request_array = (uint64_t *)malloc (planner_size * sizeof (uint64_t)))) {
+                errno = ENOMEM;
+                rc = -1;
+                goto done;
+            }
+            for (int i = 0; i < planner_size; i++)
+                request_array[i] = (uint64_t)avail_array[i];
+            if ((span_id = planner_multi_add_span (planner,
+                                                   match_time,
+                                                   meta.duration,
+                                                   request_array,
+                                                   planner_size))
+                < 0) {
+                errno = EINVAL;
+                rc = -1;
+                goto done;
+            }
+            temporary_match_spans.push_back (span_id);
+        }
     }
 
-    return rc;
+done:
+    if (avail_array)
+        free (avail_array);
+    if (request_array)
+        free (request_array);
+    for (int64_t span_id : temporary_match_spans)
+        rc += planner_multi_rem_span (planner, span_id);
+
+    return has_emitted ? 0 : rc;
 }
 
 int dfu_traverser_t::run (const std::string &str,
