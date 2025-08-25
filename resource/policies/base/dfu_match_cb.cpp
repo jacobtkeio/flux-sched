@@ -126,6 +126,19 @@ std::string dfu_match_cb_t::level ()
     return prefix;
 }
 
+int64_t dfu_match_cb_t::get_match_time ()
+{
+    return m_match_time;
+}
+
+void dfu_match_cb_t::set_match_time (int64_t match_time)
+{
+    if (match_time >= 0)
+        m_match_time = match_time;
+    else
+        m_match_time = -1;
+}
+
 }  // namespace resource_model
 }  // namespace Flux
 

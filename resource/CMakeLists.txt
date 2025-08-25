@@ -16,6 +16,7 @@ set(RESOURCE_HEADERS
     policies/dfu_match_multilevel_id.hpp
     policies/dfu_match_multilevel_id_impl.hpp
     policies/dfu_match_locality.hpp
+    policies/dfu_match_longest.hpp
     policies/dfu_match_var_aware.hpp
     policies/dfu_match_policy_factory.hpp
     jobinfo/jobinfo.hpp
@@ -51,6 +52,7 @@ set(RESOURCE_HEADERS
 
 add_library(resource STATIC
     policies/dfu_match_locality.cpp
+    policies/dfu_match_longest.cpp
     policies/dfu_match_var_aware.cpp
     policies/dfu_match_policy_factory.cpp
     jobinfo/jobinfo.cpp

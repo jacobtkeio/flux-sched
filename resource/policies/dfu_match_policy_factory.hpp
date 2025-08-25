@@ -19,6 +19,7 @@
 #include "resource/policies/dfu_match_low_id_first.hpp"
 #include "resource/policies/dfu_match_locality.hpp"
 #include "resource/policies/dfu_match_var_aware.hpp"
+#include "resource/policies/dfu_match_longest.hpp"
 #include "resource/policies/dfu_match_multilevel_id.hpp"
 #include "resource/policies/dfu_match_multilevel_id_impl.hpp"
 
