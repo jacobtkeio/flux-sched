@@ -630,9 +630,10 @@ class dfu_impl_t {
     std::shared_ptr<std::map<subsystem_t, vtx_t>> m_roots = nullptr;
     resource_graph_t *m_graph = nullptr;
     std::shared_ptr<resource_graph_db_t> m_graph_db = nullptr;
-    std::shared_ptr<dfu_match_cb_t> m_match = nullptr;
     expr_eval_api_t m_expr_eval;
     std::string m_err_msg = "";
+   protected:
+    std::shared_ptr<dfu_match_cb_t> m_match = nullptr;
 };  // the end of class dfu_impl_t
 
 template<class lookup_t>

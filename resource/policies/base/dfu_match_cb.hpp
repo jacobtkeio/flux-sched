@@ -159,6 +159,9 @@ class dfu_match_cb_t : public matcher_data_t, public matcher_util_api_t {
     void decr ();
     std::string level ();
 
+    int64_t get_match_time ();
+    void set_match_time (int64_t match_time);
+
    private:
     int m_trav_level;
     // For use with dfu_match_longest_cb_t

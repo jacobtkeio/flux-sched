@@ -16,10 +16,12 @@ extern "C" {
 
 #include <cstdlib>
 #include <cerrno>
+#include <typeinfo>
 #include "resource/traversers/dfu.hpp"
 #include "resource/schema/perf_data.hpp"
 #include "resource/planner/c/planner_multi.h"
 #include "resource/planner/c++/planner.hpp"
+#include "resource/policies/dfu_match_longest.hpp"
 
 using namespace Flux::resource_model;
 using namespace Flux::resource_model::detail;
@@ -463,6 +465,9 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         || op == match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND) {
         meta.alloc_type = jobmeta_t::alloc_type_t::AT_NO_ALLOC;
     }
+
+    // Required for "longest" match policy
+    m_match->set_match_time (match_time);
 
     if (op == match_op_t::MATCH_SATISFIABILITY) {
         if ((rc = is_satisfiable (jobspec, meta, x, root, dfv)) == 0)
