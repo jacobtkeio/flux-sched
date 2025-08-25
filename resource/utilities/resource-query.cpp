@@ -127,22 +127,24 @@ OPTIONS:
                 ALL: Aware of everything.
             (default=CA).
 
-    -P, --match-policy=<low|high|lonode|hinode|lonodex|hinodex|first|firstnodex|locality|variation>
+    -P, --match-policy=<low|high|lonode|hinode|lonodex|hinodex|first|firstnodex|locality|variation|longest>
             Set the resource match selection policy. Available policies are:
-                low: Select resources with low ID first
-                high: Select resources with high ID first
+                low: Select resources with low ID first.
+                high: Select resources with high ID first.
                 lonode: Select resources with lowest node ID first,
-                        low ID first otherwise (e.g., node-local resource types)
+                        low ID first otherwise (e.g., node-local resource types).
                 hinode: Select resources with highest node ID first,
-                        high ID first otherwise (e.g., node-local resource types)
-                lonodex: Same as lonode except each node is exclusively allocated
-                hinodex: Same as hinode except each node is exclusively allocated
-                first: Select the first matching resources and stop the search
+                        high ID first otherwise (e.g., node-local resource types).
+                lonodex: Same as lonode except each node is exclusively allocated.
+                hinodex: Same as hinode except each node is exclusively allocated.
+                first: Select the first matching resources and stop the search.
                 firstnodex: Select the first matching resources, node exclusive,
-                        and stop the search
-                locality: Select contiguous resources first in their ID space
-                variation: Allocate resources based on performance classes.
+                        and stop the search.
+                locality: Select contiguous resources first in their ID space.
+                variation: Allocate resources based on performance classes
                                 (perf_class must be set using set-property).
+                longest: Select matching resources that are available for the
+                        longest amount of time between scheduled jobs first.
                 (default=first).
 
     -F, --match-format=<simple|pretty_simple|jgf|rlite|rv1|rv1_nosched>
