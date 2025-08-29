@@ -13,7 +13,8 @@
 json_t *match_attrs_to_json (struct dfu_match_attrs attrs)
 {
     json_t *obj = NULL;
-    if (obj = json_pack ("{s:f}", "overhead", attrs.match_overhead))
+    if (obj =
+            json_pack ("{s:f s:I}", "overhead", attrs.match_overhead, "within", attrs.match_within))
         return obj;
     return NULL;
 }
@@ -26,7 +27,13 @@ struct dfu_match_attrs *match_attrs_from_json (json_t *json)
         return NULL;
     *attrs = default_match_attrs;
 
-    if (json_unpack (json, "{s?f s?I}", "overhead", &(attrs->match_overhead)) == 0)
+    if (json_unpack (json,
+                     "{s?f s?I}",
+                     "overhead",
+                     &(attrs->match_overhead),
+                     "within",
+                     &(attrs->match_within))
+        == 0)
         return attrs;
     return NULL;
 }
