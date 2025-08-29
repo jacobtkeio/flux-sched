@@ -100,7 +100,10 @@ class dfu_traverser_t {
      *                       allocate, allocate_with_satisfiability,
      *                       allocate_orelse_reserve, satisfiability,
      *                       without_allocating, or without_allocating_future.
-     *    at        the earliest time at which the job should be scheduled.
+     *  \param id        job ID to use for the schedule operation.
+     *  \param at[out]   when the job is scheduled if reserved.
+     *  \param params    parameters of the match traversal:
+     *    match_within       don't return matches starting after this duration.
      *  \param result    results of the match traversal:
      *    at        when the job is scheduled; in the future if reserved.
      *    reserved  whether the job was reserved or not.

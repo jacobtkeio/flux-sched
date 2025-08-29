@@ -388,6 +388,8 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
     int64_t graph_end = std::chrono::duration_cast<std::chrono::seconds> (
                             graph_duration.graph_end.time_since_epoch ())
                             .count ();
+    int64_t within = attrs ? attrs->match_within : INT64_MIN;
+    int64_t latest = std::numeric_limits<int64_t>::max ();
     detail::jobmeta_t meta;
     vtx_t root = get_graph_db ()->metadata.roots.at (dom);
     bool x = traverser->exclusivity (jobspec.resources, root);
@@ -403,6 +405,15 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         < 0)
         return -1;
 
+    // If within is not specified , read it from the jobspec's user attributes.
+    // Note within == INT64_MIN when it is unspecified.
+    YAML::Node match_within_node = jobspec.attributes.user["match-within"];
+    if ((within == INT64_MIN) && match_within_node.IsDefined ())
+        within = match_within_node.as<int64_t> ();
+
+    if (within >= 0 && within <= std::numeric_limits<int64_t>::max () - *at)
+        latest = *at + within;
+
     // If matching without allocation, set alloc_type to prevent allocation in update
     if (params.op == match_op_t::MATCH_WITHOUT_ALLOCATING
         || params.op == match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE)
@@ -415,7 +426,7 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         }
     } else if ((rc = schedule (jobspec, meta, x, params.op, root, dfv)) == 0) {
         result.at = meta.at;
-        if (meta.at == graph_end) {
+        if (meta.at == graph_end || meta.at > latest) {
             traverser->reset_exclusive_resource_types (exclusive_types);
             // no schedulable point found even at the end of the time, return EBUSY
             errno = EBUSY;
