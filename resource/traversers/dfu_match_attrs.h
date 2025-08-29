@@ -32,9 +32,10 @@ struct dfu_match_attrs {
     int64_t jobid;
     int64_t at;
     match_op_t op;
+    int64_t within;
 };
 
-const struct dfu_match_attrs default_match_attrs = {NULL, -1, 0, MATCH_UNKNOWN};
+const struct dfu_match_attrs default_match_attrs = {NULL, -1, 0, MATCH_UNKNOWN, INT64_MIN};
 
 /*! Encode a dfu_match_attrs struct as a json object.
  *  The caller must decref the new json object.

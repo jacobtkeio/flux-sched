@@ -14,10 +14,11 @@
 #define ID_STR "jobid"
 #define AT_STR "at"
 #define OP_STR "op"
+#define WI_STR "within"
 
 json_t *match_attrs_to_json (struct dfu_match_attrs attrs)
 {
-    return json_pack ("{s:s s:I s:I s:I}",
+    return json_pack ("{s:s s:I s:I s:I s:I}",
                       JS_STR,
                       attrs.jobspec,
                       ID_STR,
@@ -25,7 +26,9 @@ json_t *match_attrs_to_json (struct dfu_match_attrs attrs)
                       AT_STR,
                       attrs.at,
                       OP_STR,
-                      attrs.op);
+                      attrs.op,
+                      WI_STR,
+                      attrs.within);
 }
 
 struct dfu_match_attrs *match_attrs_from_json (json_t *json)
@@ -37,7 +40,7 @@ struct dfu_match_attrs *match_attrs_from_json (json_t *json)
     *attrs = default_match_attrs;
 
     if (json_unpack (json,
-                     "{s?s s?I s?I s?I}",
+                     "{s?s s?I s?I s?I s?I}",
                      JS_STR,
                      &(attrs->jobspec),
                      ID_STR,
@@ -45,7 +48,9 @@ struct dfu_match_attrs *match_attrs_from_json (json_t *json)
                      AT_STR,
                      &(attrs->at),
                      OP_STR,
-                     &(attrs->op))
+                     &(attrs->op),
+                     WI_STR,
+                     &(attrs->within))
         == 0)
         return attrs;
     return NULL;
