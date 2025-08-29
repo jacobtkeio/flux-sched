@@ -365,6 +365,7 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
     const char *js_str = NULL;
     const char *status = nullptr;
     const char *cmd = NULL;
+    int64_t candidate_within = std::numeric_limits<int64_t>::min ();
     dfu_match_params params;
     dfu_match_result result;
     std::stringstream R;
@@ -372,13 +373,15 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
     std::shared_ptr<resource_ctx_t> ctx = getctx ((flux_t *)arg);
     if (flux_request_unpack (msg,
                              NULL,
-                             "{s:s s:I s:s}",
+                             "{s:s s:I s:s s?I}",
                              "cmd",
                              &cmd,
                              "jobid",
                              &params.jobid,
                              "jobspec",
-                             &js_str)
+                             &js_str,
+                             "within",
+                             &candidate_within)
         < 0)
         goto error;
     params.op = match_op_from_string (cmd);
@@ -393,6 +396,8 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
         flux_log_error (h, "%s: existent job (%jd).", __FUNCTION__, (intmax_t)params.jobid);
         goto error;
     }
+    if (candidate_within != std::numeric_limits<int64_t>::min ())
+        params.match_within = candidate_within;
     if (run_match (ctx, js_str, params, result, R, NULL) < 0) {
         if (errno != EBUSY && errno != ENODEV)
             flux_log_error (ctx->h,
