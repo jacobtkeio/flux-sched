@@ -367,6 +367,7 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
     int64_t now = 0;
     double overhead = 0.0f;
     const char *status = nullptr;
+    int64_t candidate_within = std::numeric_limits<int64_t>::min ();
     std::stringstream R;
     dfu_match_attrs *attrs;
     json_t *attrs_raw = nullptr;
@@ -389,6 +390,8 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
         flux_log_error (h, "%s: existent job (%jd).", __FUNCTION__, (intmax_t)attrs->jobid);
         goto error;
     }
+    if (candidate_within != std::numeric_limits<int64_t>::min ())
+        attrs->within = candidate_within;
     if (run_match (ctx, *attrs, &now, &at, &overhead, R, NULL) < 0) {
         if (errno != EBUSY && errno != ENODEV)
             flux_log_error (ctx->h,
