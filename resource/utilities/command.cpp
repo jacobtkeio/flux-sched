@@ -309,8 +309,9 @@ int cmd_match (std::shared_ptr<detail::resource_query_t> &ctx,
                std::ostream &out)
 {
     match_op_t match_op;
+    int64_t match_within;
 
-    if (args.size () != 3) {
+    if (args.size () < 3 || args.size () > 4) {
         std::cerr << "ERROR: malformed command" << std::endl;
         return 0;
     }
@@ -322,6 +323,15 @@ int cmd_match (std::shared_ptr<detail::resource_query_t> &ctx,
 
     uint64_t jobid = ctx->get_job_counter ();
     std::string &jobspec_fn = args[2];
+
+    if (args.size () == 4) {
+        try {
+            match_within = std::stoi (args[3]);
+        } catch (...) {
+            std::cerr << "ERROR: invalid integer for 'within' param: " << args[3] << std::endl;
+            return 0;
+        }
+    }
 
     run_match (ctx, jobid, match_op, jobspec_fn, out);
 
