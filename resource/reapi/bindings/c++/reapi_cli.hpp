@@ -96,7 +96,8 @@ class resource_query_t {
                        match_op_t op,
                        int64_t jobid,
                        int64_t &at,
-                       std::stringstream &o);
+                       std::stringstream &o,
+                       int64_t num_matches = 1);
     int traverser_find (std::string criteria);
 
     // must be public; results in a deleted stringstream if converted to
@@ -142,7 +143,8 @@ class reapi_cli_t : public reapi_t {
                                bool &reserved,
                                std::string &R,
                                int64_t &at,
-                               double &ov);
+                               double &ov,
+                               int64_t num_matches = 1);
     static int match_allocate_multi (void *h,
                                      bool orelse_reserve,
                                      const char *jobs,
