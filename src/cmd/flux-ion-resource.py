@@ -44,7 +44,7 @@ class ResourceModuleInterface:
         payload = {
             "cmd": "allocate",
             "jobid": jobid,
-            "jobspec": jobspec_str
+            "jobspec": jobspec_str,
             "number": number,
         }
         return self.handle.rpc("sched-fluxion-resource.match", payload).get()
