@@ -39,6 +39,7 @@ static void set_default_args (std::shared_ptr<resource_ctx_t> &ctx)
     ct_opts.set_prune_filters ("ALL:core,ALL:node,ALL:gpu,ALL:ssd");
     ct_opts.set_match_format ("rv1_nosched");
     ct_opts.set_update_interval (0);
+    ct_opts.set_maximum_matches (1);
     ctx->opts += ct_opts;
 }
 
@@ -220,7 +221,7 @@ static void feasibility_request_cb (flux_t *h,
         goto error;
     }
     error.text[0] = '\0';
-    if (run_match (ctx, -1, "satisfiability", js_str, &now, &at, &overhead, R, &error) < 0) {
+    if (run_match (ctx, -1, "satisfiability", js_str, 1, &now, &at, &overhead, R, &error) < 0) {
         if (errno == ENODEV)
             errmsg = "Unsatisfiable request";
         else {
