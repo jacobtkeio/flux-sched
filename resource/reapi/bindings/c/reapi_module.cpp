@@ -54,7 +54,8 @@ extern "C" int reapi_module_match (reapi_module_ctx_t *ctx,
                                    bool *reserved,
                                    char **R,
                                    int64_t *at,
-                                   double *ov)
+                                   double *ov,
+                                   int64_t num_matches)
 {
     int rc = -1;
     std::string R_buf = "";
@@ -64,8 +65,15 @@ extern "C" int reapi_module_match (reapi_module_ctx_t *ctx,
         errno = EINVAL;
         goto out;
     }
-    if ((rc = reapi_module_t::
-             match_allocate (ctx->h, match_op, jobspec, jobid, *reserved, R_buf, *at, *ov))
+    if ((rc = reapi_module_t::match_allocate (ctx->h,
+                                              match_op,
+                                              jobspec,
+                                              jobid,
+                                              *reserved,
+                                              R_buf,
+                                              *at,
+                                              *ov,
+                                              num_matches))
         < 0) {
         goto out;
     }
@@ -86,12 +94,13 @@ extern "C" int reapi_module_match_allocate (reapi_module_ctx_t *ctx,
                                             bool *reserved,
                                             char **R,
                                             int64_t *at,
-                                            double *ov)
+                                            double *ov,
+                                            int64_t num_matches)
 {
     match_op_t match_op =
         orelse_reserve ? match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE : match_op_t::MATCH_ALLOCATE;
 
-    return reapi_module_match (ctx, match_op, jobspec, jobid, reserved, R, at, ov);
+    return reapi_module_match (ctx, match_op, jobspec, jobid, reserved, R, at, ov, num_matches);
 }
 
 extern "C" int reapi_module_match_satisfy (reapi_module_ctx_t *ctx, const char *jobspec, double *ov)

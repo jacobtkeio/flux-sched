@@ -66,6 +66,7 @@ void reapi_module_destroy (reapi_module_ctx_t *ctx);
  *  \param ov        Double into which to return performance overhead
  *                   in terms of elapse time needed to complete
  *                   the match operation.
+ *  \param num_m.    The number of distinct matches to return.
  *  \return          0 on success; -1 on error.
  */
 int reapi_module_match (reapi_module_ctx_t *ctx,
@@ -75,7 +76,8 @@ int reapi_module_match (reapi_module_ctx_t *ctx,
                         bool *reserved,
                         char **R,
                         int64_t *at,
-                        double *ov);
+                        double *ov,
+                        int64_t num_matches = 1);
 
 /*! Match a jobspec to the "best" resources and either allocate
  *  orelse reserve them. The best resources are determined by
@@ -96,6 +98,7 @@ int reapi_module_match (reapi_module_ctx_t *ctx,
  *  \param ov        Double into which to return performance overhead
  *                   in terms of elapse time needed to complete
  *                   the match operation.
+ *  \param num_m.    The number of distinct matches to return.
  *  \return          0 on success; -1 on error.
  */
 int reapi_module_match_allocate (reapi_module_ctx_t *ctx,
@@ -105,7 +108,8 @@ int reapi_module_match_allocate (reapi_module_ctx_t *ctx,
                                  bool *reserved,
                                  char **R,
                                  int64_t *at,
-                                 double *ov);
+                                 double *ov,
+                                 int64_t num_matches = 1);
 
 /*! Run Satisfiability check for jobspec.
  *
