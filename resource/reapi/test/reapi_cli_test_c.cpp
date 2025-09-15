@@ -227,6 +227,77 @@ TEST_CASE ("Match basic jobspec", "[match C]")
         CHECK ((exp_json = json_object_get (exec_json, "expiration")) != nullptr);
         REQUIRE ((expiration = json_integer_value (exp_json)) == 7200);
     }
+
+    SECTION ("Match multiple resources per request")
+    {
+        bool reserved = false;
+        char *R;
+        uint64_t jobid = 1;
+        double ov = 0.0;
+        int64_t at = 0;
+
+        match_op_t match_op = match_op_t::MATCH_WITHOUT_ALLOCATING;
+
+        rc = reapi_cli_match (ctx, match_op, jobspec.c_str (), &jobid, &reserved, &R, &at, &ov, 4);
+        CHECK (reserved == false);
+        CHECK (at == 0);
+        REQUIRE (rc == 0);
+
+        // Allocate all resources (4 matches)
+        match_op = match_op_t::MATCH_ALLOCATE;
+        rc = reapi_cli_match (ctx, match_op, jobspec.c_str (), &jobid, &reserved, &R, &at, &ov, 4);
+        CHECK (reserved == false);
+        CHECK (at == 0);
+        REQUIRE (rc == 0);
+        // No other allocation is possible
+        rc = reapi_cli_match (ctx, match_op, jobspec.c_str (), &jobid, &reserved, &R, &at, &ov, 4);
+        CHECK (reserved == false);
+        CHECK (at == 0);
+        REQUIRE (rc == -1);
+
+        // Matching without allocating 5 sequential timeslots works
+        match_op = match_op_t::MATCH_WITHOUT_ALLOCATING;
+        rc = reapi_cli_match (ctx, match_op, jobspec.c_str (), &jobid, &reserved, &R, &at, &ov, 5);
+        CHECK (reserved == false);
+        CHECK (at == 3600);
+        REQUIRE (rc == 0);
+
+        int linestart = 0;
+        std::string Rstr = R;
+
+        CHECK (Rstr.find ("\"starttime\": 3600"));
+        linestart = 1 + Rstr.find ("\n", linestart);
+        REQUIRE (linestart != Rstr.npos);
+
+        CHECK (Rstr.find ("\"starttime\": 7200", linestart));
+        linestart = 1 + Rstr.find ("\n", linestart);
+        REQUIRE (linestart != Rstr.npos);
+
+        CHECK (Rstr.find ("\"starttime\": 10800", linestart));
+        linestart = 1 + Rstr.find ("\n", linestart);
+        REQUIRE (linestart != Rstr.npos);
+
+        CHECK (Rstr.find ("\"starttime\": 14400", linestart));
+        linestart = 1 + Rstr.find ("\n", linestart);
+        REQUIRE (linestart != Rstr.npos);
+
+        REQUIRE (Rstr.find ("\"starttime\": 18000", linestart));
+
+        // Matching with extension 2 sequential timeslots works
+        // This should discard the second match request since the first
+        // covers the graph's entire lifetime.
+        match_op = match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND;
+        rc = reapi_cli_match (ctx, match_op, jobspec.c_str (), &jobid, &reserved, &R, &at, &ov, 2);
+        CHECK (reserved == false);
+        CHECK (at == 3600);
+        REQUIRE (rc == 0);
+
+        Rstr = R;
+
+        // We got only one match that expires at graph_end
+        CHECK (Rstr.find ("\"expiration\": 9223372036854775807") != Rstr.npos);
+        REQUIRE (Rstr.find ("\n", 1 + Rstr.find ("\n")) == Rstr.npos);
+    }
 }
 
 }  // namespace Flux::resource_model::detail
