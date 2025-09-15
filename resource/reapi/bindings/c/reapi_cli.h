@@ -74,6 +74,7 @@ int reapi_cli_initialize (reapi_cli_ctx_t *ctx, const char *rgraph, const char *
  *  \param ov        Double into which to return performance overhead
  *                   in terms of elapse time needed to complete
  *                   the match operation.
+ *  \param num_m.    The number of distinct matches to return.
  *  \return          0 on success; -1 on error.
  */
 int reapi_cli_match (reapi_cli_ctx_t *ctx,
@@ -83,7 +84,8 @@ int reapi_cli_match (reapi_cli_ctx_t *ctx,
                      bool *reserved,
                      char **R,
                      int64_t *at,
-                     double *ov);
+                     double *ov,
+                     int64_t num_matches = 1);
 
 /*! Match a jobspec to the "best" resources and either allocate
  *  orelse reserve them. The best resources are determined by
@@ -104,6 +106,7 @@ int reapi_cli_match (reapi_cli_ctx_t *ctx,
  *  \param ov        Double into which to return performance overhead
  *                   in terms of elapse time needed to complete
  *                   the match operation.
+ *  \param num_m.    The number of distinct matches to return.
  *  \return          0 on success; -1 on error.
  */
 int reapi_cli_match_allocate (reapi_cli_ctx_t *ctx,
@@ -113,7 +116,8 @@ int reapi_cli_match_allocate (reapi_cli_ctx_t *ctx,
                               bool *reserved,
                               char **R,
                               int64_t *at,
-                              double *ov);
+                              double *ov,
+                              int64_t num_matches = 1);
 
 /*! Run Satisfiability check for jobspec.
  *
