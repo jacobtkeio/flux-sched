@@ -256,6 +256,108 @@ TEST_CASE ("Match basic jobspec", "[match C++]")
         REQUIRE ((exp_json = json_object_get (exec_json, "expiration")) != nullptr);
         REQUIRE ((expiration = json_integer_value (exp_json)) == 7200);
     }
+
+    SECTION ("Match multiple resources per request")
+    {
+        bool reserved = false;
+        std::string R = "";
+        uint64_t jobid = 1;
+        double ov = 0.0;
+        int64_t at = 0;
+
+        match_op_t match_op = match_op_t::MATCH_WITHOUT_ALLOCATING;
+
+        rc = reapi_cli_t::match_allocate (ctx.get (),
+                                          match_op,
+                                          jobspec,
+                                          jobid,
+                                          reserved,
+                                          R,
+                                          at,
+                                          ov,
+                                          4);
+        REQUIRE (rc == 0);
+        REQUIRE (reserved == false);
+        REQUIRE (at == 0);
+
+        // Allocate all resources (4 matches)
+        match_op = match_op_t::MATCH_ALLOCATE;
+        rc = reapi_cli_t::match_allocate (ctx.get (),
+                                          match_op,
+                                          jobspec,
+                                          jobid,
+                                          reserved,
+                                          R,
+                                          at,
+                                          ov,
+                                          4);
+        REQUIRE (rc == 0);
+        REQUIRE (reserved == false);
+        REQUIRE (at == 0);
+        jobid = ctx->get_job_counter ();
+        // No other allocation is possible
+        rc =
+            reapi_cli_t::match_allocate (ctx.get (), match_op, jobspec, jobid, reserved, R, at, ov);
+        REQUIRE (rc == -1);
+        REQUIRE (reserved == false);
+        REQUIRE (at == 0);
+
+        // Matching without allocating 5 sequential timeslots works
+        match_op = match_op_t::MATCH_WITHOUT_ALLOCATING;
+        rc = reapi_cli_t::match_allocate (ctx.get (),
+                                          match_op,
+                                          jobspec,
+                                          jobid,
+                                          reserved,
+                                          R,
+                                          at,
+                                          ov,
+                                          5);
+        REQUIRE (rc == 0);
+        REQUIRE (reserved == false);
+        REQUIRE (at == 3600);
+
+        int linestart = 0;
+
+        REQUIRE (R.find ("\"starttime\": 3600"));
+        linestart = 1 + R.find ("\n", linestart);
+        REQUIRE (linestart != R.npos);
+
+        REQUIRE (R.find ("\"starttime\": 7200", linestart));
+        linestart = 1 + R.find ("\n", linestart);
+        REQUIRE (linestart != R.npos);
+
+        REQUIRE (R.find ("\"starttime\": 10800", linestart));
+        linestart = 1 + R.find ("\n", linestart);
+        REQUIRE (linestart != R.npos);
+
+        REQUIRE (R.find ("\"starttime\": 14400", linestart));
+        linestart = 1 + R.find ("\n", linestart);
+        REQUIRE (linestart != R.npos);
+
+        REQUIRE (R.find ("\"starttime\": 18000", linestart));
+
+        // Matching with extension 2 sequential timeslots works
+        // This should discard the second match request since the first
+        // covers the graph's entire lifetime.
+        match_op = match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND;
+        rc = reapi_cli_t::match_allocate (ctx.get (),
+                                          match_op,
+                                          jobspec,
+                                          jobid,
+                                          reserved,
+                                          R,
+                                          at,
+                                          ov,
+                                          2);
+        REQUIRE (rc == 0);
+        REQUIRE (reserved == false);
+        REQUIRE (at == 3600);
+
+        // We got only one match that expires at graph_end
+        REQUIRE (R.find ("\"expiration\": 9223372036854775807") != R.npos);
+        REQUIRE (R.find ("\n", 1 + R.find ("\n")) == R.npos);
+    }
 }
 
 }  // namespace Flux::resource_model::detail
