@@ -751,6 +751,10 @@ int dfu_impl_t::dom_dfv (const jobmeta_t &meta,
         m_err_msg += ".\n";
         goto done;
     }
+
+    // Required for "longest" match policy
+    m_match->set_match_time (at);
+
     if (m_match->dom_finish_vtx (u, dom, resources, *m_graph, dfu) != 0)
         goto done;
     if ((rc = resolve (dfu, to_parent)) != 0)

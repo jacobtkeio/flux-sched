@@ -55,6 +55,18 @@ struct plus {
         return result + a.score;
     }
 };
+struct least {
+    inline const int64_t operator() (const int64_t &result, const eval_egroup_t &b) const
+    {
+        return (result < b.score) ? result : b.score;
+    }
+};
+struct greatest {
+    inline const int64_t operator() (const int64_t &result, const eval_egroup_t &b) const
+    {
+        return (result > b.score) ? result : b.score;
+    }
+};
 inline boost::icl::interval_set<int64_t>::interval_type to_interval (const eval_egroup_t &ev)
 {
     using namespace boost::icl;

@@ -63,13 +63,14 @@ class scoring_api_t {
                                  resource_type_t r,
                                  unsigned int k,
                                  compare_op comp = fold::greater (),
-                                 binary_op accum = fold::plus ())
+                                 binary_op accum = fold::plus (),
+                                 int init = 0)
     {
         int64_t rc;
         auto &res_evals = m_ssys_map[s][r];
         if ((rc = res_evals.choose_best_k<compare_op> (k, comp)) != -1) {
             m_hier_constrain_now = true;
-            rc = res_evals.accum_best_k<binary_op> (accum);
+            rc = res_evals.accum_best_k<binary_op> (accum, init);
         }
         return rc;
     }

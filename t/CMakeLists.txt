@@ -67,6 +67,7 @@ set(ALL_TESTS
   t3033-resource-nodex.t
   t3034-resource-pconstraints.t
   t3035-resource-remove.t
+  t3036-resource-longest.t
   t3037-resource-custom-policy.t
   t3300-system-dontblock.t
   t3301-system-latestart.t

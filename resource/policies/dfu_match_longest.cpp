@@ -43,35 +43,6 @@ dfu_match_longest_cb_t::~dfu_match_longest_cb_t ()
 {
 }
 
-int dfu_match_longest_cb_t::dom_finish_graph (subsystem_t subsystem,
-                                              const std::vector<Flux::Jobspec::Resource> &resources,
-                                              const resource_graph_t &g,
-                                              scoring_api_t &dfu)
-{
-    int score = MATCH_MET;
-
-    for (auto &resource : resources) {
-        unsigned int qc = dfu.qualified_count (subsystem, resource.type);
-        unsigned int count = calc_count (resource, qc);
-        if (count == 0) {
-            score = MATCH_UNMET;
-            break;
-        }
-        dfu.choose_accum_best_k (subsystem, resource.type, count);
-    }
-    dfu.set_overall_score (score);
-    return (score == MATCH_MET) ? 0 : -1;
-}
-
-int dfu_match_longest_cb_t::dom_finish_slot (subsystem_t subsystem, scoring_api_t &dfu)
-{
-    std::vector<resource_type_t> types;
-    dfu.resrc_types (subsystem, types);
-    for (auto &type : types)
-        dfu.choose_accum_all (subsystem, type);
-    return 0;
-}
-
 int dfu_match_longest_cb_t::dom_finish_vtx (vtx_t u,
                                             subsystem_t subsystem,
                                             const std::vector<Flux::Jobspec::Resource> &resources,
@@ -80,9 +51,12 @@ int dfu_match_longest_cb_t::dom_finish_vtx (vtx_t u,
 {
     struct planner_t *p = g[u].schedule.plans;
     int64_t score = MATCH_MET;
-    int64_t overall;
     int64_t match_time = get_match_time ();
     int64_t plan_end = planner_base_time (p) + planner_duration (p);
+    int64_t overall = -1;
+    int64_t end = -1;
+    fold::greater comp;
+    fold::least accum;
 
     if (match_time > plan_end || match_time < 0)
         return -2;
@@ -101,17 +75,30 @@ int dfu_match_longest_cb_t::dom_finish_vtx (vtx_t u,
                 score = MATCH_UNMET;
                 break;
             }
-            dfu.choose_accum_best_k (subsystem, c_type, count);
+            dfu.choose_accum_best_k (subsystem, c_type, count, comp, accum, (int)plan_end);
         }
     }
 
-    int64_t end = planner_unavail_time_first (p, match_time, 1);
+    if (score == MATCH_MET) {
+        end = planner_unavail_time_first (p, match_time, 1);
 
-    // If end == graph_end it should actually be very large
-    if (end == -1 && errno == ENOENT)
-        end = plan_end;
+        if (end == -1) {
+            // If end == graph_end, end should be maximized
+            if (errno == ENOENT) {
+                end = plan_end;
+                errno = 0;
+                // Handle integer overflow (and overall cannot == int64_t::max ())
+                if (end - match_time > std::numeric_limits<int64_t>::max () - score - 2)
+                    end -= score + 2;
+            } else {
+                score = MATCH_UNMET;
+            }
+        } else if (end <= match_time) {
+            return -3;
+        }
+    }
 
-    overall = (score == MATCH_MET) ? (end - match_time) : score;
+    overall = (score == MATCH_MET) ? (end - match_time) + score + 1 : score;
     dfu.set_overall_score (overall);
     decr ();
     return (score == MATCH_MET) ? 0 : -1;

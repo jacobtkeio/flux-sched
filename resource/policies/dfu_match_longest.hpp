@@ -24,11 +24,6 @@ struct dfu_match_longest_cb_t : public dfu_match_cb_t {
     dfu_match_longest_cb_t &operator= (const dfu_match_longest_cb_t &o);
     ~dfu_match_longest_cb_t ();
 
-    int dom_finish_graph (subsystem_t subsystem,
-                          const std::vector<Flux::Jobspec::Resource> &resources,
-                          const resource_graph_t &g,
-                          scoring_api_t &dfu);
-    int dom_finish_slot (subsystem_t subsystem, scoring_api_t &dfu);
     int dom_finish_vtx (vtx_t u,
                         subsystem_t subsystem,
                         const std::vector<Flux::Jobspec::Resource> &resources,

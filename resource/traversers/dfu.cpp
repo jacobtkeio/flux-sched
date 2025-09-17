@@ -466,9 +466,6 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         meta.alloc_type = jobmeta_t::alloc_type_t::AT_NO_ALLOC;
     }
 
-    // Required for "longest" match policy
-    m_match->set_match_time (match_time);
-
     if (op == match_op_t::MATCH_SATISFIABILITY) {
         if ((rc = is_satisfiable (jobspec, meta, x, root, dfv)) == 0)
             detail::dfu_impl_t::update ();
