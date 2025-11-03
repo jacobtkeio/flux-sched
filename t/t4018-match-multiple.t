@@ -35,8 +35,12 @@ test_expect_success 'match-without-allocating -n works with a 1-node, 1-socket j
     test $(wc -l out2 | cut -d" " -f1,1) -eq 4
 '
 
-test_expect_success 'match-without-allocating-extend -n works' '
-    flux ion-resource match without_allocating_extend -n4 ${jobspec} | grep -o "{.*starttime" | wc -l && false
+# MWOAE blocks out the time span of each prospective match completely
+# after the match is emitted. Since the first match extends to the end
+# of the graph, no time span is available for another match and the
+# command exits successfully with one result.
+test_expect_success 'basic match-without-allocating-extend -n works' '
+    test $(flux ion-resource match without_allocating_extend -n4 ${jobspec} | grep -o "{.*" | wc -l) -eq 1
 '
 
 test_expect_success 'match-allocate works (all resources)' '
@@ -59,6 +63,21 @@ test_expect_success 'match-without-allocating -n succeeds when n>max' '
     flux ion-resource match without_allocating -n9999 ${jobspec} | \
         grep "{" | tee out4 &&
     test $(wc -l out4 | cut -d" " -f1,1) -eq 6
+'
+
+# With one time gap before a reservation and one after, MWOAE should match two slots
+# 1: M....E    R    M.....E
+# 2: A    R    R
+# 3: A    R    R
+# 4: A    R    R
+# t: 0    3600 7200 10800 graph_end
+# With A=Allocated, R=Reserved, M=Matched, and E=Extended Match
+# Note: cancel 3&9 opens the first gap from t=0-3600 on node 1
+test_expect_success 'match-without-allocating-extend -n works with multiple matches' '
+    for i in {1..8}; do flux ion-resource match allocate_orelse_reserve ${jobspec}; done &&
+    flux ion-resource cancel 3 &&
+    flux ion-resource cancel 9 &&
+    test $(flux ion-resource match without_allocating_extend -n4 ${jobspec} | grep "{.*" | wc -l) -eq 2
 '
 
 test_expect_success 'detecting of a non-existent jobspec file works' '
