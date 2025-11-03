@@ -79,7 +79,7 @@ int dfu_traverser_t::request_feasible (detail::jobmeta_t const &meta,
     // check if there are enough nodes up at all
     if (target_nodes > get_graph_db ()->metadata.nodes_up) {
         if (op == match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE || op == match_op_t::MATCH_ALLOCATE
-            || op == match_op_t::MATCH_WITHOUT_ALLOCATING) {
+            || op == match_op_t::MATCH_WITHOUT_ALLOCATING || op == match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND) {
             errno = EBUSY;
             return -1;
         }
@@ -103,7 +103,7 @@ int dfu_traverser_t::request_feasible (detail::jobmeta_t const &meta,
             .count ();
     // only the initial time matters for allocate
     const int64_t target_time =
-        op == match_op_t::MATCH_ALLOCATE || op == match_op_t::MATCH_WITHOUT_ALLOCATING
+        op == match_op_t::MATCH_ALLOCATE || op == match_op_t::MATCH_WITHOUT_ALLOCATING || op == match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND
             ? meta.at
             : graph_end - 1;
     int feasible_nodes = 0;
@@ -125,7 +125,7 @@ int dfu_traverser_t::request_feasible (detail::jobmeta_t const &meta,
     if (feasible_nodes < target_nodes) {
         // no chance, don't even try
         if (op == match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE || op == match_op_t::MATCH_ALLOCATE
-            || op == match_op_t::MATCH_WITHOUT_ALLOCATING) {
+            || op == match_op_t::MATCH_WITHOUT_ALLOCATING || op == match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND) {
             errno = EBUSY;
             return -1;
         }
