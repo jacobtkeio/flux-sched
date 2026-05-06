@@ -189,9 +189,9 @@ int dfu_traverser_t::schedule (Jobspec::Jobspec &jobspec,
         case match_op_t::MATCH_ALLOCATE_ORELSE_RESERVE:
             /* Or else reserve */
             meta.alloc_type = jobmeta_t::alloc_type_t::AT_ALLOC_ORELSE_RESERVE;
-            /* Fall through */
+            [[fallthrough]];
         case match_op_t::MATCH_WITHOUT_ALLOCATING_EXTEND:
-            /* Fall through */
+            [[fallthrough]];
         case match_op_t::MATCH_WITHOUT_ALLOCATING: {
             /* Seek to first successful match */
             errno = 0;
