@@ -8,7 +8,7 @@ test_description='Test matching-without-allocating multiple timeslots at once'
 . `dirname $0`/sharness.sh
 
 grug="${SHARNESS_TEST_SRCDIR}/data/resource/grugs/tiny.graphml"
-jobspec="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/test001.yaml"
+jobspec="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/test006.yaml"
 malform="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/basics/bad.yaml"
 duration_too_large="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/duration/test001.yaml"
 duration_negative="${SHARNESS_TEST_SRCDIR}/data/resource/jobspecs/duration/test002.yaml"
