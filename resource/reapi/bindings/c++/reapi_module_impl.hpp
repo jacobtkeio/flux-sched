@@ -20,6 +20,7 @@ extern "C" {
 
 #include <cerrno>
 #include <jansson.h>
+#include <cstdint>
 #include "resource/reapi/bindings/c++/reapi_module.hpp"
 
 namespace Flux {
@@ -54,7 +55,7 @@ int reapi_module_t::match_allocate (void *h,
                              "sched-fluxion-resource.match",
                              FLUX_NODEID_ANY,
                              0,
-                             "{s:s s:I s:s}",
+                             "{s:s s:I s:s s:I}",
                              "cmd",
                              cmd,
                              "jobid",
