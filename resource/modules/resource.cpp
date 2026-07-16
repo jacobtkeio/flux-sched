@@ -1203,11 +1203,14 @@ static void notify_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_
         const char *route;
         std::shared_ptr<resource_ctx_t> ctx = getctx ((flux_t *)arg);
         std::shared_ptr<msg_wrap_t> m = std::make_shared<msg_wrap_t> ();
+        json_t *requested = NULL;
 
-        if (flux_request_decode (msg, NULL, NULL) < 0) {
-            flux_log_error (h, "%s: flux_request_decode", __FUNCTION__);
+        if (flux_request_unpack (msg, NULL, "{s?:o}", NOTIFY_REQUEST_KEY, &requested) < 0) {
+            flux_log_error (h, "%s: flux_request_unpack", __FUNCTION__);
             goto error;
         }
+        // notify_flags_from_json returns NOTIFY_NONE when requested is NULL.
+        m->set_notify_flags (notify_flags_from_json (requested));
         if (!flux_msg_is_streaming (msg)) {
             errno = EPROTO;
             flux_log_error (h, "%s: streaming flag not set", __FUNCTION__);
@@ -1271,12 +1274,13 @@ static void notify_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_
         //  init_resource_graph runs before flux_reactor_run.
         // Only send resources at first so that the
         //  module can initialize its graph.
-        if (flux_respond_pack (ctx->h,
-                               msg,
-                               "{s:O*}",
-                               NOTIFY_RESOURCES_KEY,
-                               ctx->m_notify_resources.get ())
-            < 0) {
+        if ((m->get_notify_flags () & NOTIFY_RESOURCES)
+            && flux_respond_pack (ctx->h,
+                                  msg,
+                                  "{s:O*}",
+                                  NOTIFY_RESOURCES_KEY,
+                                  ctx->m_notify_resources.get ())
+                   < 0) {
             flux_log_error (ctx->h, "%s: flux_respond_pack", __FUNCTION__);
             goto error;
         }
@@ -1286,13 +1290,14 @@ static void notify_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_
                                msg,
                                "{s:s* s:s* s:s* s:f}",
                                NOTIFY_UP_KEY,
-                               up_str,
+                               m->get_notify_flags () & NOTIFY_UP ? up_str : nullptr,
                                NOTIFY_DOWN_KEY,
-                               down_str,
+                               m->get_notify_flags () & NOTIFY_DOWN ? down_str : nullptr,
                                NOTIFY_SHRINK_KEY,
-                               lost_str,
+                               m->get_notify_flags () & NOTIFY_SHRINK ? lost_str : nullptr,
                                NOTIFY_EXPIRATION_KEY,
-                               ctx->m_notify_expiration)
+                               m->get_notify_flags () & NOTIFY_EXPIRATION ? ctx->m_notify_expiration
+                                                                          : -1.)
             < 0) {
             flux_log_error (ctx->h, "%s: flux_respond_pack", __FUNCTION__);
             goto error;
