@@ -58,54 +58,54 @@ const std::map<std::string, resource_opts_t::opt_key_t> resource_opts_t::opt_key
 // Public API for Resource Match Option Class
 ////////////////////////////////////////////////////////////////////////////////
 
-const std::string &resource_opts_t::get_load_file () const
+const std::optional<std::string> &resource_opts_t::get_load_file () const
 {
-    return m_load_file.value ();
+    return m_load_file;
 }
 
-const std::string &resource_opts_t::get_load_format () const
+const std::optional<std::string> &resource_opts_t::get_load_format () const
 {
-    return m_load_format.value ();
+    return m_load_format;
 }
 
-const std::string &resource_opts_t::get_load_allowlist () const
+const std::optional<std::string> &resource_opts_t::get_load_allowlist () const
 {
-    return m_load_allowlist.value ();
+    return m_load_allowlist;
 }
 
-const std::string &resource_opts_t::get_match_policy () const
+const std::optional<std::string> &resource_opts_t::get_match_policy () const
 {
-    return m_match_policy.value ();
+    return m_match_policy;
 }
 
-const std::string &resource_opts_t::get_match_format () const
+const std::optional<std::string> &resource_opts_t::get_match_format () const
 {
-    return m_match_format.value ();
+    return m_match_format;
 }
 
-const std::string &resource_opts_t::get_match_subsystems () const
+const std::optional<std::string> &resource_opts_t::get_match_subsystems () const
 {
-    return m_match_subsystems.value ();
+    return m_match_subsystems;
 }
 
-const int resource_opts_t::get_reserve_vtx_vec () const
+const std::optional<int> resource_opts_t::get_reserve_vtx_vec () const
 {
     return m_reserve_vtx_vec;
 }
 
-const std::string &resource_opts_t::get_prune_filters () const
+const std::optional<std::string> &resource_opts_t::get_prune_filters () const
 {
-    return m_prune_filters.value ();
+    return m_prune_filters;
 }
 
-const int resource_opts_t::get_update_interval () const
+const std::optional<int> resource_opts_t::get_update_interval () const
 {
     return m_update_interval;
 }
 
-const std::string &resource_opts_t::get_traverser_policy () const
+const std::optional<std::string> &resource_opts_t::get_traverser_policy () const
 {
-    return m_traverser_policy.value ();
+    return m_traverser_policy;
 }
 
 void resource_opts_t::set_load_file (const std::string &p)
@@ -175,56 +175,6 @@ void resource_opts_t::set_update_interval (const int i)
     m_update_interval = i;
 }
 
-bool resource_opts_t::is_load_file_set () const
-{
-    return m_load_file.has_value ();
-}
-
-bool resource_opts_t::is_load_format_set () const
-{
-    return m_load_format.has_value ();
-}
-
-bool resource_opts_t::is_load_allowlist_set () const
-{
-    return m_load_allowlist.has_value ();
-}
-
-bool resource_opts_t::is_match_policy_set () const
-{
-    return m_match_policy.has_value ();
-}
-
-bool resource_opts_t::is_match_format_set () const
-{
-    return m_match_format.has_value ();
-}
-
-bool resource_opts_t::is_match_subsystems_set () const
-{
-    return m_match_subsystems.has_value ();
-}
-
-bool resource_opts_t::is_reserve_vtx_vec_set () const
-{
-    return m_reserve_vtx_vec != 0;
-}
-
-bool resource_opts_t::is_prune_filters_set () const
-{
-    return m_prune_filters.has_value ();
-}
-
-bool resource_opts_t::is_update_interval_set () const
-{
-    return m_update_interval != 0;
-}
-
-bool resource_opts_t::is_traverser_policy_set () const
-{
-    return m_traverser_policy.has_value ();
-}
-
 resource_opts_t &resource_opts_t::canonicalize ()
 {
     return *this;
@@ -232,28 +182,28 @@ resource_opts_t &resource_opts_t::canonicalize ()
 
 resource_opts_t &resource_opts_t::operator+= (const resource_opts_t &src)
 {
-    if (src.is_load_file_set ())
-        set_load_file (src.get_load_file ());
-    if (src.is_load_format_set ())
-        set_load_format (src.get_load_format ());
-    if (src.is_load_allowlist_set ())
-        set_load_allowlist (src.get_load_allowlist ());
-    if (src.is_match_policy_set ()) {
+    if (auto src_load_file = src.get_load_file ())
+        set_load_file (*src_load_file);
+    if (auto src_load_format = src.get_load_format ())
+        set_load_format (*src_load_format);
+    if (auto src_load_allowlist = src.get_load_allowlist ())
+        set_load_allowlist (*src_load_allowlist);
+    if (auto src_match_policy = src.get_match_policy ()) {
         std::string e = "";
-        set_match_policy (src.get_match_policy (), e);
+        set_match_policy (*src_match_policy, e);
     }
-    if (src.is_match_format_set ())
-        set_match_format (src.get_match_format ());
-    if (src.is_match_subsystems_set ())
-        set_match_subsystems (src.get_match_subsystems ());
-    if (src.is_reserve_vtx_vec_set ())
-        set_reserve_vtx_vec (src.get_reserve_vtx_vec ());
-    if (src.is_prune_filters_set ())
-        set_prune_filters (src.get_prune_filters ());
-    if (src.is_update_interval_set ())
-        set_update_interval (src.get_update_interval ());
-    if (src.is_traverser_policy_set ())
-        set_traverser_policy (src.get_traverser_policy ());
+    if (auto src_match_format = src.get_match_format ())
+        set_match_format (*src_match_format);
+    if (auto src_match_subsystems = src.get_match_subsystems ())
+        set_match_subsystems (*src_match_subsystems);
+    if (auto src_reserve_vtx_vec = src.get_reserve_vtx_vec ())
+        set_reserve_vtx_vec (*src_reserve_vtx_vec);
+    if (auto src_prune_filters = src.get_prune_filters ())
+        set_prune_filters (*src_prune_filters);
+    if (auto src_update_interval = src.get_update_interval ())
+        set_update_interval (*src_update_interval);
+    if (auto src_traverser_policy = src.get_traverser_policy ())
+        set_traverser_policy (*src_traverser_policy);
     return *this;
 }
 
@@ -321,7 +271,7 @@ int resource_opts_t::parse (const std::string &k, const std::string &v, std::str
 
         case PRUNE_FILTERS:
             if (v.find_first_not_of (' ') != std::string::npos) {
-                if (is_prune_filters_set ())
+                if (get_prune_filters ())
                     add_to_prune_filters (v);
                 else
                     set_prune_filters (v);
@@ -363,28 +313,29 @@ int resource_opts_t::jsonify (std::string &json_out) const
     int save_errno;
     json_t *o{nullptr};
     const char *json_str{nullptr};
+    auto to_c_str = [] (auto &s) { return s.c_str (); };
 
     o = json_pack ("{ s:s? s:s? s:s? s:s? s:s? s:s? s:i s:s? s:i s:s? }",
                    "load-file",
-                   is_load_file_set () ? get_load_file ().c_str () : nullptr,
+                   get_load_file ().transform (to_c_str).value_or (nullptr),
                    "load-format",
-                   is_load_format_set () ? get_load_format ().c_str () : nullptr,
+                   get_load_format ().transform (to_c_str).value_or (nullptr),
                    "load-allowlist",
-                   is_load_allowlist_set () ? get_load_allowlist ().c_str () : nullptr,
+                   get_load_allowlist ().transform (to_c_str).value_or (nullptr),
                    "policy",
-                   is_match_policy_set () ? get_match_policy ().c_str () : nullptr,
+                   get_match_policy ().transform (to_c_str).value_or (nullptr),
                    "match-format",
-                   is_match_format_set () ? get_match_format ().c_str () : nullptr,
+                   get_match_format ().transform (to_c_str).value_or (nullptr),
                    "subsystems",
-                   is_match_subsystems_set () ? get_match_subsystems ().c_str () : nullptr,
+                   get_match_subsystems ().transform (to_c_str).value_or (nullptr),
                    "reserve-vtx-vec",
-                   is_reserve_vtx_vec_set () ? get_reserve_vtx_vec () : 0,
+                   get_reserve_vtx_vec ().value_or (0),
                    "prune-filters",
-                   is_prune_filters_set () ? get_prune_filters ().c_str () : nullptr,
+                   get_prune_filters ().transform (to_c_str).value_or (nullptr),
                    "update-interval",
-                   is_update_interval_set () ? get_update_interval () : 0,
+                   get_update_interval ().value_or (0),
                    "traverser",
-                   is_traverser_policy_set () ? get_traverser_policy ().c_str () : nullptr);
+                   get_traverser_policy ().transform (to_c_str).value_or (nullptr));
     if (!o) {
         errno = ENOMEM;
         goto ret;

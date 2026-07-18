@@ -48,16 +48,16 @@ class resource_opts_t : public optmgr_parse_t {
     resource_opts_t (resource_opts_t &&o) = default;
     resource_opts_t &operator= (resource_opts_t &&o) = default;
 
-    const std::string &get_load_file () const;
-    const std::string &get_load_format () const;
-    const std::string &get_load_allowlist () const;
-    const std::string &get_match_policy () const;
-    const std::string &get_match_format () const;
-    const std::string &get_match_subsystems () const;
-    const int get_reserve_vtx_vec () const;
-    const std::string &get_prune_filters () const;
-    const int get_update_interval () const;
-    const std::string &get_traverser_policy () const;
+    const std::optional<std::string> &get_load_file () const;
+    const std::optional<std::string> &get_load_format () const;
+    const std::optional<std::string> &get_load_allowlist () const;
+    const std::optional<std::string> &get_match_policy () const;
+    const std::optional<std::string> &get_match_format () const;
+    const std::optional<std::string> &get_match_subsystems () const;
+    const std::optional<int> get_reserve_vtx_vec () const;
+    const std::optional<std::string> &get_prune_filters () const;
+    const std::optional<int> get_update_interval () const;
+    const std::optional<std::string> &get_traverser_policy () const;
 
     void set_load_file (const std::string &o);
     bool set_load_format (const std::string &o);
@@ -70,17 +70,6 @@ class resource_opts_t : public optmgr_parse_t {
     void add_to_prune_filters (const std::string &o);
     void set_update_interval (const int i);
     bool set_traverser_policy (const std::string &o);
-
-    bool is_load_file_set () const;
-    bool is_load_format_set () const;
-    bool is_load_allowlist_set () const;
-    bool is_match_policy_set () const;
-    bool is_match_format_set () const;
-    bool is_match_subsystems_set () const;
-    bool is_reserve_vtx_vec_set () const;
-    bool is_prune_filters_set () const;
-    bool is_update_interval_set () const;
-    bool is_traverser_policy_set () const;
 
     /*! Canonicalize the option set -- apply the general resource properties
      */
@@ -135,9 +124,9 @@ class resource_opts_t : public optmgr_parse_t {
     std::optional<std::string> m_match_policy;
     std::optional<std::string> m_match_format;
     std::optional<std::string> m_match_subsystems;
-    int m_reserve_vtx_vec = 0;
+    std::optional<int> m_reserve_vtx_vec;
     std::optional<std::string> m_prune_filters;
-    int m_update_interval = 0;
+    std::optional<int> m_update_interval;
     std::optional<std::string> m_traverser_policy;
 };
 
