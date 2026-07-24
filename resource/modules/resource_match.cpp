@@ -224,12 +224,13 @@ static void update_resource (flux_future_t *f, void *arg)
     const char *down = NULL;
     const char *lost = NULL;
     double expiration = -1.;
+    const char *add_subgraph = NULL;
     json_t *resources = NULL;
 
     std::shared_ptr<resource_ctx_t> &ctx = *(static_cast<std::shared_ptr<resource_ctx_t> *> (arg));
 
     if ((rc = flux_rpc_get_unpack (f,
-                                   "{s?:o s?:s s?:s s?:s s?:F}",
+                                   "{s?:o s?:s s?:s s?:s s?:F s?:s}",
                                    NOTIFY_RESOURCES_KEY,
                                    &resources,
                                    NOTIFY_UP_KEY,
@@ -239,7 +240,9 @@ static void update_resource (flux_future_t *f, void *arg)
                                    NOTIFY_SHRINK_KEY,
                                    &lost,
                                    NOTIFY_EXPIRATION_KEY,
-                                   &expiration))
+                                   &expiration,
+                                   NOTIFY_ADD_SUBGRAPH_KEY,
+                                   &add_subgraph))
         < 0) {
         flux_log_error (ctx->h,
                         ctx->m_acquire_resources_from_core ? "%s: exiting due to resource.acquire "
@@ -251,7 +254,7 @@ static void update_resource (flux_future_t *f, void *arg)
         flux_reactor_stop (flux_get_reactor (ctx->h)); /* Cancels notify msgs */
         goto done;
     }
-    if ((rc = update_resource_db (ctx, resources, up, down, lost)) < 0) {
+    if ((rc = update_resource_db (ctx, resources, up, down, lost, add_subgraph)) < 0) {
         flux_log_error (ctx->h, "%s: update_resource_db", __FUNCTION__);
         goto done;
     }
@@ -276,7 +279,7 @@ static void update_resource (flux_future_t *f, void *arg)
             if (rc +=
                 flux_respond_pack (ctx->h,
                                    m->get_msg (),
-                                   "{s:s* s:s* s:s* s:f}",
+                                   "{s:s* s:s* s:s* s:f s:s*}",
                                    NOTIFY_UP_KEY,
                                    m->get_notify_flags () & NOTIFY_UP ? up : nullptr,
                                    NOTIFY_DOWN_KEY,
@@ -284,7 +287,10 @@ static void update_resource (flux_future_t *f, void *arg)
                                    NOTIFY_SHRINK_KEY,
                                    m->get_notify_flags () & NOTIFY_SHRINK ? lost : nullptr,
                                    NOTIFY_EXPIRATION_KEY,
-                                   m->get_notify_flags () & NOTIFY_EXPIRATION ? expiration : -1.)
+                                   m->get_notify_flags () & NOTIFY_EXPIRATION ? expiration : -1.,
+                                   NOTIFY_ADD_SUBGRAPH_KEY,
+                                   m->get_notify_flags () & NOTIFY_ADD_SUBGRAPH ? add_subgraph
+                                                                                : nullptr)
                 < 0) {
                 flux_log_error (ctx->h, "%s: flux_respond_pack", __FUNCTION__);
                 goto done;
@@ -311,7 +317,7 @@ static int populate_resource_db_acquire (std::shared_ptr<resource_ctx_t> &ctx)
         }
     } else {
         const json_t *requested =
-            notify_flags_to_json (NOTIFY_RESOURCES | NOTIFY_SHRINK | NOTIFY_EXPIRATION);
+            notify_flags_to_json (NOTIFY_RESOURCES | NOTIFY_SHRINK | NOTIFY_EXPIRATION | NOTIFY_ADD_SUBGRAPH);
 
         if (!requested) {
             flux_log_error (ctx->h, "%s: notify_flags_to_json", __FUNCTION__);
@@ -1203,7 +1209,8 @@ int update_resource_db (std::shared_ptr<resource_ctx_t> &ctx,
                         json_t *resources,
                         const char *up,
                         const char *down,
-                        const char *lost)
+                        const char *lost,
+                        const char *add_subgraph)
 {
     int rc = 0;
     char *down_not_lost = NULL;
@@ -1239,6 +1246,11 @@ int update_resource_db (std::shared_ptr<resource_ctx_t> &ctx,
     if (lost)
         if ((rc = shrink_resources (ctx, lost)) < 0) {
             flux_log_error (ctx->h, "%s: shrink (lost)", __FUNCTION__);
+            goto done;
+        }
+    if (add_subgraph)
+        if ((rc = run_add_subgraph (ctx, add_subgraph)) < 0) {
+            flux_log_error (ctx->h, "%s: run_add_subgraph", __FUNCTION__);
             goto done;
         }
 done:
