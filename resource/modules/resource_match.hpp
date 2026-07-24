@@ -183,7 +183,8 @@ int update_resource_db (std::shared_ptr<resource_ctx_t> &ctx,
                         json_t *resources,
                         const char *up,
                         const char *down,
-                        const char *lost);
+                        const char *lost,
+                        const char *add_subgraph);
 
 int select_subsystems (std::shared_ptr<resource_ctx_t> &ctx);
 
