@@ -1491,7 +1491,7 @@ error:
 }
 
 /*
- * Send a NULL resource.notify message to get qmanager to reconsider jobs
+ * Send an empty resource.notify message to get qmanager to reconsider jobs
  */
 static int reconsider_blocked_jobs (
     flux_t *h,
@@ -1499,7 +1499,7 @@ static int reconsider_blocked_jobs (
 {
     int rc = 0;
     for (auto &kv : notify_msgs) {
-        if (flux_respond (h, kv.second->get_msg (), NULL) < 0) {
+        if (flux_respond (h, kv.second->get_msg (), "{}") < 0) {
             rc = -1;
             flux_log_error (h, "%s: flux_respond", __FUNCTION__);
         }
