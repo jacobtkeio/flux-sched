@@ -28,6 +28,12 @@ ForEachMacros :
 
 SortIncludes : false
 BreakBeforeBinaryOperators : NonAssignment
+BreakBinaryOperations:
+  Default: Never
+  PerOperator:
+    - Operators: ['&&', '||']
+      Style: OnePerLine
+      MinChainLength: 2
 AlignAfterOpenBracket: Align
 AlignOperands : true
 BreakBeforeTernaryOperators : true
