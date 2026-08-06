@@ -1183,6 +1183,17 @@ static void remove_subgraph_request_cb (flux_t *h,
     if (flux_respond_pack (h, msg, "{}") < 0)
         flux_log_error (h, "%s", __FUNCTION__);
 
+    // Forward the remove_subgraph request to subscribed modules
+    for (const auto &[_, m] : ctx->notify_msgs)
+        if (m->get_notify_flags () & NOTIFY_REMOVE_SUBGRAPH)
+            if (flux_respond_pack (ctx->h,
+                                   m->get_msg (),
+                                   "{s:s}",
+                                   NOTIFY_REMOVE_SUBGRAPH_KEY,
+                                   subgraph_path)
+                < 0)
+                flux_log_error (ctx->h, "%s: flux_respond_pack", __FUNCTION__);
+
     return;
 
 error:
