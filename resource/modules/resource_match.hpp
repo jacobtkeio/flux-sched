@@ -184,7 +184,8 @@ int update_resource_db (std::shared_ptr<resource_ctx_t> &ctx,
                         const char *up,
                         const char *down,
                         const char *lost,
-                        const char *add_subgraph);
+                        const char *add_subgraph,
+                        const char *remove_subgraph);
 
 int select_subsystems (std::shared_ptr<resource_ctx_t> &ctx);
 

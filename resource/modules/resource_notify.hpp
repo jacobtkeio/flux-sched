@@ -24,6 +24,7 @@ namespace resource_notify {
 #define NOTIFY_SHRINK_KEY "shrink"
 #define NOTIFY_EXPIRATION_KEY "expiration"
 #define NOTIFY_ADD_SUBGRAPH_KEY "add_subgraph"
+#define NOTIFY_REMOVE_SUBGRAPH_KEY "remove_subgraph"
 
 enum notify_flag_t : uint64_t {
     NOTIFY_NONE = 0,
@@ -33,6 +34,7 @@ enum notify_flag_t : uint64_t {
     NOTIFY_SHRINK = (1 << 3),
     NOTIFY_EXPIRATION = (1 << 4),
     NOTIFY_ADD_SUBGRAPH = (1 << 5),
+    NOTIFY_REMOVE_SUBGRAPH = (1 << 6),
 };
 
 /*! Encode notification flags as a json object.
@@ -41,7 +43,7 @@ enum notify_flag_t : uint64_t {
  */
 inline json_t *notify_flags_to_json (const std::underlying_type<notify_flag_t>::type flags)
 {
-    return json_pack ("{s:b,s:b,s:b,s:b,s:b,s:b}",
+    return json_pack ("{s:b,s:b,s:b,s:b,s:b,s:b,s:b}",
                       NOTIFY_RESOURCES_KEY,
                       flags & NOTIFY_RESOURCES,
                       NOTIFY_UP_KEY,
@@ -53,7 +55,9 @@ inline json_t *notify_flags_to_json (const std::underlying_type<notify_flag_t>::
                       NOTIFY_EXPIRATION_KEY,
                       flags & NOTIFY_EXPIRATION,
                       NOTIFY_ADD_SUBGRAPH_KEY,
-                      flags & NOTIFY_ADD_SUBGRAPH);
+                      flags & NOTIFY_ADD_SUBGRAPH,
+                      NOTIFY_REMOVE_SUBGRAPH_KEY,
+                      flags & NOTIFY_REMOVE_SUBGRAPH);
 }
 
 /*! Decode notification flags from a json object.
@@ -77,6 +81,8 @@ inline notify_flag_t notify_flags_from_json (json_t *json)
             flags |= NOTIFY_EXPIRATION;
         if (json_is_true (json_object_get (json, NOTIFY_ADD_SUBGRAPH_KEY)))
             flags |= NOTIFY_ADD_SUBGRAPH;
+        if (json_is_true (json_object_get (json, NOTIFY_REMOVE_SUBGRAPH_KEY)))
+            flags |= NOTIFY_REMOVE_SUBGRAPH;
     }
 
     return static_cast<notify_flag_t> (flags);
