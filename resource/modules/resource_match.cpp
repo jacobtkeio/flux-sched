@@ -1460,16 +1460,15 @@ out:
 }
 
 static int run (std::shared_ptr<resource_ctx_t> &ctx,
-                int64_t jobid,
-                match_op_t op,
                 const std::string &jstr,
-                int64_t *at,
+                const dfu_match_params &params,
+                dfu_match_result &result,
                 flux_error_t *errp)
 {
     int rc = -1;
     try {
         Flux::Jobspec::Jobspec j{jstr};
-        rc = ctx->traverser->run (j, ctx->writers, op, jobid, at);
+        rc = ctx->traverser->run (j, ctx->writers, params, result);
     } catch (const Flux::Jobspec::parse_error &e) {
         errno = EINVAL;
         if (errp && e.what ()) {
@@ -1546,36 +1545,36 @@ out:
 }
 
 int run_match (std::shared_ptr<resource_ctx_t> &ctx,
-               int64_t jobid,
-               const char *cmd,
                const std::string &jstr,
-               int64_t *now,
-               int64_t *at,
-               double *overhead,
+               dfu_match_params &params,
+               dfu_match_result &result,
                std::stringstream &o,
                flux_error_t *errp)
 {
     int rc = 0;
+    int64_t now;
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::duration<double> elapsed;
     std::chrono::duration<int64_t> epoch;
-    bool rsv = false;
 
     start = std::chrono::system_clock::now ();
-    match_op_t op = match_op_from_string (cmd);
-    if (!match_op_valid (op)) {
+    if (!match_op_valid (params.op)) {
         rc = -1;
         errno = EINVAL;
-        flux_log (ctx->h, LOG_ERR, "%s: unknown cmd: %s", __FUNCTION__, cmd);
+        flux_log (ctx->h,
+                  LOG_ERR,
+                  "%s: unknown match op: %s",
+                  __FUNCTION__,
+                  match_op_to_string (params.op));
         goto done;
     }
 
     epoch = std::chrono::duration_cast<std::chrono::seconds> (start.time_since_epoch ());
-    *at = *now = epoch.count ();
-    if ((rc = run (ctx, jobid, op, jstr, at, errp)) < 0) {
+    params.at = now = epoch.count ();
+    if ((rc = run (ctx, jstr, params, result, errp)) < 0) {
         elapsed = std::chrono::system_clock::now () - start;
-        *overhead = elapsed.count ();
-        update_match_perf (*overhead, jobid, false);
+        result.overhead = elapsed.count ();
+        update_match_perf (result.overhead, params.jobid, false);
         goto done;
     }
     if ((rc = ctx->writers->emit (o)) < 0) {
@@ -1583,18 +1582,25 @@ int run_match (std::shared_ptr<resource_ctx_t> &ctx,
         goto done;
     }
 
-    rsv = (*now != *at) ? true : false;
+    result.reserved = (now != result.at) ? true : false;
     elapsed = std::chrono::system_clock::now () - start;
-    *overhead = elapsed.count ();
-    update_match_perf (*overhead, jobid, true);
+    result.overhead = elapsed.count ();
+    update_match_perf (result.overhead, params.jobid, true);
 
-    if (op != match_op_t::MATCH_SATISFIABILITY && op != match_op_t::MATCH_WITHOUT_ALLOCATING
-        && op != match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE) {
-        if ((rc = track_schedule_info (ctx, jobid, rsv, *at, jstr, o, *overhead)) != 0) {
+    if (params.op != MATCH_SATISFIABILITY && params.op != MATCH_WITHOUT_ALLOCATING
+        && params.op != MATCH_WITHOUT_ALLOCATING_FUTURE) {
+        if ((rc = track_schedule_info (ctx,
+                                       params.jobid,
+                                       result.reserved,
+                                       result.at,
+                                       jstr,
+                                       o,
+                                       result.overhead))
+            != 0) {
             flux_log_error (ctx->h,
                             "%s: can't add job info (id=%jd)",
                             __FUNCTION__,
-                            (intmax_t)jobid);
+                            (intmax_t)params.jobid);
             goto done;
         }
     }

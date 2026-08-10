@@ -1359,7 +1359,11 @@ int resource_query_t::traverser_run (Flux::Jobspec::Jobspec &job,
                                      int64_t jobid,
                                      int64_t &at)
 {
-    return traverser->run (job, writers, op, jobid, &at);
+    dfu_match_params params = {.jobid = jobid, .op = op, .at = at};
+    dfu_match_result result = default_match_result;
+    int rc = traverser->run (job, writers, params, result);
+    at = result.at;
+    return rc;
 }
 
 int resource_query_t::traverser_find (std::string criteria)

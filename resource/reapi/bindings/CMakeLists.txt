@@ -25,6 +25,7 @@ add_library (reapi_module STATIC
     )
 target_link_libraries( reapi_module PRIVATE
     flux::core
+    dfu_match_params
     )
 target_link_libraries( reapi_module PUBLIC
     match_op

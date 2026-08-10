@@ -19,6 +19,7 @@ extern "C" {
 }
 
 #include <cerrno>
+#include <jansson.h>
 #include "resource/reapi/bindings/c++/reapi_module.hpp"
 
 namespace Flux {
@@ -41,6 +42,8 @@ int reapi_module_t::match_allocate (void *h,
     const char *rset = NULL;
     const char *status = NULL;
     const char *cmd = match_op_to_string (match_op);
+    dfu_match_result result;
+    json_t *result_json;
 
     if (!fh || !cmd || jobspec == "" || jobid > INT64_MAX) {
         errno = EINVAL;
@@ -62,7 +65,7 @@ int reapi_module_t::match_allocate (void *h,
     }
 
     if (flux_rpc_get_unpack (f,
-                             "{s:I s:s s:f s:s s:I}",
+                             "{s:I s:s s:f s:s s:I s:o}",
                              "jobid",
                              &rj,
                              "status",
@@ -72,7 +75,9 @@ int reapi_module_t::match_allocate (void *h,
                              "R",
                              &rset,
                              "at",
-                             &at)
+                             &at,
+                             "result",
+                             &result_json)
         < 0) {
         goto out;
     }

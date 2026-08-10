@@ -369,9 +369,8 @@ int dfu_traverser_t::initialize (std::shared_ptr<resource_graph_db_t> db,
 
 int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
                           std::shared_ptr<match_writers_t> &writers,
-                          match_op_t op,
-                          int64_t jobid,
-                          int64_t *at)
+                          const dfu_match_params &params,
+                          dfu_match_result &result)
 {
     // Clear the error message to disambiguate errors
     clear_err_message ();
@@ -396,29 +395,33 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
     std::unordered_map<resource_type_t, int64_t> dfv;
 
     traverser->prime_jobspec (jobspec.resources, dfv);
-    if (meta.build (jobspec, detail::jobmeta_t::alloc_type_t::AT_ALLOC, jobid, *at, graph_duration)
+    if (meta.build (jobspec,
+                    detail::jobmeta_t::alloc_type_t::AT_ALLOC,
+                    params.jobid,
+                    params.at,
+                    graph_duration)
         < 0)
         return -1;
 
     // If matching without allocation, set alloc_type to prevent allocation in update
-    if (op == match_op_t::MATCH_WITHOUT_ALLOCATING
-        || op == match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE)
+    if (params.op == match_op_t::MATCH_WITHOUT_ALLOCATING
+        || params.op == match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE)
         meta.alloc_type = jobmeta_t::alloc_type_t::AT_NO_ALLOC;
 
-    if (op == match_op_t::MATCH_SATISFIABILITY) {
+    if (params.op == match_op_t::MATCH_SATISFIABILITY) {
         rc = is_satisfiable (jobspec, meta, x, root, dfv);
         if (rc == 0) {
             traverser->update ();
         }
-    } else if ((rc = schedule (jobspec, meta, x, op, root, dfv)) == 0) {
-        *at = meta.at;
-        if (*at == graph_end) {
+    } else if ((rc = schedule (jobspec, meta, x, params.op, root, dfv)) == 0) {
+        result.at = meta.at;
+        if (meta.at == graph_end) {
             traverser->reset_exclusive_resource_types (exclusive_types);
             // no schedulable point found even at the end of the time, return EBUSY
             errno = EBUSY;
             return -1;
         }
-        if (*at < 0 or *at > graph_end) {
+        if (meta.at < 0 or meta.at > graph_end) {
             traverser->reset_exclusive_resource_types (exclusive_types);
             errno = EINVAL;
             return -1;
@@ -426,10 +429,10 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
         // If job ends after the resource graph expires, reduce the duration
         // so it coincides with the graph expiration. Note that we could
         // arguably return ENOTSUP/EINVAL instead. Also note that we
-        // know *at < graph_end from the previous check, and meta.duration
+        // know meta.at < graph_end from the previous check, and meta.duration
         // is < int64_t max from meta.build.
-        if ((*at + static_cast<int64_t> (meta.duration)) > graph_end)
-            meta.duration = graph_end - *at;
+        if ((meta.at + static_cast<int64_t> (meta.duration)) > graph_end)
+            meta.duration = graph_end - meta.at;
         // returns 0 or -1
         rc = traverser->update (root, writers, meta);
     }

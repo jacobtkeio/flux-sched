@@ -139,12 +139,9 @@ inline bool is_existent_jobid (const std::shared_ptr<resource_ctx_t> &ctx, uint6
 int Rlite_equal (const std::shared_ptr<resource_ctx_t> &ctx, const char *R1, const char *R2);
 
 int run_match (std::shared_ptr<resource_ctx_t> &ctx,
-               int64_t jobid,
-               const char *cmd,
                const std::string &jstr,
-               int64_t *now,
-               int64_t *at,
-               double *overhead,
+               dfu_match_params &params,
+               dfu_match_result &result,
                std::stringstream &o,
                flux_error_t *errp);
 
