@@ -379,7 +379,7 @@ TEST_CASE ("Test run_find on load-file", "[match find C++]")
     REQUIRE (test_srcdir);
 
     std::ifstream inputFile (std::string (test_srcdir)
-                             + "/data/resource/jgfs/elastic/add-remove-node-test.json");
+                             + "/data/resource/jgfs/tiny.json");
     REQUIRE (inputFile.is_open ());
 
     buffer << inputFile.rdbuf ();
