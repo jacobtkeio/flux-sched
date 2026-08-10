@@ -371,4 +371,25 @@ TEST_CASE ("Test the graph idempotence of certain match operations", "[match C++
     }
 }
 
+TEST_CASE ("Test run_find on load-file", "[match find C++]")
+{
+    const std::string options = "{ \"load_format\" : \"jgf\" }";
+    std::stringstream buffer;
+    const char *test_srcdir = std::getenv ("SHARNESS_TEST_SRCDIR");
+    REQUIRE (test_srcdir);
+
+    std::ifstream inputFile (std::string (test_srcdir)
+                             + "/data/resource/jgfs/elastic/add-remove-node-test.json");
+    REQUIRE (inputFile.is_open ());
+
+    buffer << inputFile.rdbuf ();
+    std::string rgraph = buffer.str ();
+
+    std::shared_ptr<resource_query_t> ctx = nullptr;
+    ctx = std::make_shared<resource_query_t> (rgraph, options);
+    REQUIRE (ctx);
+
+    REQUIRE (ctx->traverser_find ("status=up and status=down") == 0);
+}
+
 }  // namespace Flux::resource_model::detail
