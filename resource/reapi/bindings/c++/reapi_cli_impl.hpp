@@ -101,12 +101,12 @@ int reapi_cli_t::match_allocate (void *h,
                                  bool &reserved,
                                  std::string &R,
                                  int64_t &at,
-                                 double &ov)
+                                 traverser_match_attrs *attrs)
 {
     resource_query_t *rq = static_cast<resource_query_t *> (h);
     int traverser_rc;
     at = 0;
-    ov = 0.0f;
+    double ov = 0.0f;
     job_lifecycle_t st;
     std::shared_ptr<job_info_t> job_info = nullptr;
     struct timeval start_time, end_time;
@@ -149,7 +149,7 @@ int reapi_cli_t::match_allocate (void *h,
      * ENODEV - unsatisfiable
      * Otherwise, return immediately.
      */
-    if ((traverser_rc = rq->traverser_run (job, match_op, (int64_t)jobid, at)) < 0) {
+    if ((traverser_rc = rq->traverser_run (job, match_op, (int64_t)jobid, at, attrs)) < 0) {
         traverser_errno = errno;
         if (rq->get_traverser_err_msg () != "") {
             m_err_msg += __FUNCTION__;
@@ -180,6 +180,8 @@ int reapi_cli_t::match_allocate (void *h,
     }
 
     ov = get_elapsed_time (start_time, end_time);
+    if (attrs)
+        attrs->match_overhead = ov;
 
     if (matched) {
         if (match_op == match_op_t::MATCH_WITHOUT_ALLOCATING
@@ -1076,11 +1078,23 @@ resource_query_t::resource_query_t (const std::string &rgraph, const std::string
             m_err_msg += "WARN: allowlist unsupported\n";
     }
 
-    if (db->load (rgraph, rd) != 0) {
-        tmp_err = __FUNCTION__;
-        tmp_err += ": ERROR: " + rd->err_message () + "\n";
-        tmp_err += "ERROR: error generating resources\n";
-        throw std::runtime_error (tmp_err);
+    {
+        // The interner storages are process-global statics that this
+        // constructor finalizes below.  When more than one resource_query_t is
+        // created in a process (e.g. across test cases, or a re-init), an
+        // earlier instance will have already finalized them, so loading a graph
+        // that introduces a resource type or subsystem not yet interned would
+        // throw ("interner is finalized ...").  Reopen the storages across the
+        // load so new strings can be added, mirroring add_subgraph().
+        auto subsystem_open = subsystem_t::storage_t::open_for_scope ();
+        auto resource_open = resource_type_t::storage_t::open_for_scope ();
+
+        if (db->load (rgraph, rd) != 0) {
+            tmp_err = __FUNCTION__;
+            tmp_err += ": ERROR: " + rd->err_message () + "\n";
+            tmp_err += "ERROR: error generating resources\n";
+            throw std::runtime_error (tmp_err);
+        }
     }
 
     jobid_counter = 1;
@@ -1345,9 +1359,10 @@ void resource_query_t::incr_job_counter ()
 int resource_query_t::traverser_run (Flux::Jobspec::Jobspec &job,
                                      match_op_t op,
                                      int64_t jobid,
-                                     int64_t &at)
+                                     int64_t &at,
+                                     traverser_match_attrs *attrs)
 {
-    return traverser->run (job, writers, op, jobid, &at);
+    return traverser->run (job, writers, op, jobid, &at, attrs);
 }
 
 int resource_query_t::traverser_find (std::string criteria)

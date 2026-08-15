@@ -35,6 +35,7 @@ set(ALL_TESTS
   t1030-rv1-shorthand.t
   t1031-add-remove-resources.t
   t1032-without-alloc-check.t
+  t1033-qmanager-vqueue.t
   t2317-resource-shrink.t
   t3000-jobspec.t
   t3001-resource-basic.t
@@ -99,6 +100,7 @@ set(ALL_TESTS
   t4015-notify-feasibility.t
   t4016-match-flexible.t
   t4017-match-without-allocating.t
+  t4018-match-within.t
   t5000-valgrind.t
   t5100-issues-test-driver.t
   t5200-jgf-load-no-parent-jgf.t
