@@ -784,18 +784,12 @@ int dfu_impl_t::get_parent_vtx (vtx_t vtx, vtx_t &parent_vtx)
 
 int dfu_impl_t::remove_metadata_outedges (vtx_t source_vertex, vtx_t dest_vertex)
 {
-    std::vector<edg_t> remove_edges;
     auto iter = m_graph_db->metadata.by_outedges.find (source_vertex);
     if (iter == m_graph_db->metadata.by_outedges.end ())
         return -1;
-    auto &outedges = iter->second;
-    for (auto kv = outedges.begin (); kv != outedges.end (); ++kv) {
-        if (boost::target (kv->second, *m_graph) == dest_vertex) {
-            kv = outedges.erase (kv);
-            // TODO: Consider adding break here
-        }
-    }
-
+    std::erase_if (iter->second, [this, dest_vertex] (const auto &it) {
+        return boost::target (it.second, *m_graph) == dest_vertex;
+    });
     return 0;
 }
 
