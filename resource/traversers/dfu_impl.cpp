@@ -998,6 +998,39 @@ done:
     return rc;
 }
 
+int dfu_impl_t::dom_find_removed (std::shared_ptr<match_writers_t> &w, const std::string &criteria)
+{
+    int rc = 0;
+    bool result = false;
+    const std::map<std::string, std::string> agfilter_data;
+    Flux::resource_model::vtx_predicates_override_t p_overridden;
+    expr_eval_vtx_target_t target;
+
+    for (const vtx_t &u : m_graph_db->metadata.removed) {
+        target.initialize (p_overridden, m_graph, u);
+        if ((rc = m_expr_eval.evaluate (criteria, target, result)) < 0)
+            break;
+        if (!result) {
+            rc = -1;
+            break;
+        }
+        if ((rc = w->emit_vtx ("",
+                        *m_graph,
+                        u,
+                        -1,
+                        agfilter_data,
+                        true,
+                        false))
+                < 0) {
+            m_err_msg += __FUNCTION__;
+            m_err_msg += std::string (": error from emit_vtx: ") + strerror (errno);
+            break;
+        }
+    }
+
+    return rc;
+}
+
 int dfu_impl_t::has_root (vtx_t root,
                           std::vector<Resource> &resources,
                           scoring_api_t &dfu,
@@ -1385,6 +1418,20 @@ int dfu_impl_t::find (std::shared_ptr<match_writers_t> &writers, const std::stri
                 agfilter = true;
             } else {
                 agfilter = false;
+            }
+        } else if (p.first == "exists") {
+            if (p.second != "true" && p.second != "t") {
+                tick ();
+
+                if ((rc = dom_find_removed (writers, criteria)) < 0)
+                    goto done;
+
+                if (writers->emit_tm (0, 0) == -1) {
+                    m_err_msg += __FUNCTION__;
+                    m_err_msg += ": emit_tm returned -1.\n";
+                }
+
+                goto done;
             }
         }
     }

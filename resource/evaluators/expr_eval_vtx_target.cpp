@@ -146,7 +146,7 @@ int expr_eval_vtx_target_t::evaluate (const std::string &p,
     } else if (p == "property") {
         result = (*m_g)[m_u].properties.contains (lcx);
     } else if (p == "exists") {
-        result = (lcx == "true" | lcx == "t");
+        result = true;
     } else {
         rc = -1;
         errno = EINVAL;

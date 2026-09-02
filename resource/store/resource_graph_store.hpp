@@ -46,6 +46,7 @@ struct resource_graph_metadata_t {
         vtx_t,
         std::map<std::pair<uint64_t, int64_t>, edg_t, std::greater<std::pair<uint64_t, int64_t>>>>
         by_outedges;
+    std::vector<vtx_t> removed;
     graph_duration_t graph_duration;
     int64_t nodes_up = 0;
 

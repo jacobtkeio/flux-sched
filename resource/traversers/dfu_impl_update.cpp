@@ -835,6 +835,7 @@ int dfu_impl_t::remove_subgraph (const std::vector<vtx_t> &roots, std::set<vtx_t
     }
     for (auto &vtx : vertices) {
         // clear vertex edges but don't delete vertex
+        m_graph_db->metadata.removed.push_back (vtx);
         boost::clear_vertex (vtx, *m_graph);
         remove_graph_metadata (vtx);
     }

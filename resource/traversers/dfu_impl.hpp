@@ -555,6 +555,7 @@ class dfu_impl_t {
                       vtx_t u,
                       subsystem_t aux,
                       const vtx_predicates_override_t &p);
+    int dom_find_removed (std::shared_ptr<match_writers_t> &w, const std::string &criteria);
 
     int has_root (vtx_t root,
                   std::vector<Jobspec::Resource> &resources,
