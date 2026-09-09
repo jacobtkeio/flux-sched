@@ -310,6 +310,17 @@ static int populate_resource_db_acquire (std::shared_ptr<resource_ctx_t> &ctx)
 {
     int rc = -1;
     const json_t *requested = nullptr;
+    flux_t *h = ctx->h;
+
+    if (auto uri = ctx->opts.get_opt ().get_mirror_uri ()) {
+        if (!(h = flux_open (uri->c_str (), 0))) {
+            flux_log_error (ctx->h,
+                    "%s: flux_open with URI: %s",
+                    __FUNCTION__,
+                    uri->c_str ());
+            goto done;
+        }
+    }
 
     if (ctx->m_notify_flags) {
         requested = notify_flags_to_json (ctx->m_notify_flags);
@@ -322,7 +333,7 @@ static int populate_resource_db_acquire (std::shared_ptr<resource_ctx_t> &ctx)
     // If this module is not getting resources from core, use
     //  sched-fluxion-resource.notify instead of resource.acquire to avoid
     //  using more than one resource.acquire RPC, which is not allowed
-    if (!(ctx->update_f = flux_rpc_pack (ctx->h,
+    if (!(ctx->update_f = flux_rpc_pack (h,
                                          ctx->m_acquire_topic,
                                          FLUX_NODEID_ANY,
                                          FLUX_RPC_STREAMING,

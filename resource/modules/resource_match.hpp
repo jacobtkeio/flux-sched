@@ -114,6 +114,7 @@ struct resource_ctx_t : public resource_interface_t {
     json::value m_r_alloc;
 
     /* Module initialization */
+    const char *m_module_name = nullptr;
     const char *m_acquire_topic = "sched-fluxion-resource.notify";
     notify_flag_t m_notify_flags = NOTIFY_NONE;
 };
