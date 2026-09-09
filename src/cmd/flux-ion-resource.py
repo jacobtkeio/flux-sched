@@ -123,9 +123,13 @@ class ResourceModuleInterface:
         payload = {"rank": rank, "type-name": type_name, "id": identity}
         return self.handle.rpc("sched-fluxion-resource.ns-info", payload).get()
 
-    def rpc_satisfiability(self, jobspec):
+    def rpc_satisfiability(self, jobspec, mirror=None):
         payload = {"jobspec": jobspec}
-        return self.handle.rpc("feasibility.check", payload).get()
+        if mirror:
+            topic = mirror + ".check"
+        else:
+            topic = "feasibility.check"
+        return self.handle.rpc(topic, payload).get()
 
     def rpc_params(self):
         return self.handle.rpc("sched-fluxion-resource.params").get()
@@ -227,7 +231,7 @@ def satisfiability_action(args):
     with open(args.jobspec, "r") as stream:
         jobspec = yaml.safe_load(stream)
         rmod = ResourceModuleInterface()
-        rmod.rpc_satisfiability(jobspec)
+        rmod.rpc_satisfiability(jobspec, args.mirror)
         print("=" * width())
         print("Satisfiable request")
         print("=" * width())
@@ -542,6 +546,7 @@ def parse_match(parser_m: argparse.ArgumentParser):
         subparser.add_argument(
             "jobspec", metavar="Jobspec", type=str, help="Jobspec file name"
         )
+    parser_fe.add_argument("-m", "--mirror", type=str, help="Name of mirror representing a remote cluster")
 
     parser_ma.set_defaults(func=match_alloc_action)
     parser_ms.set_defaults(func=match_alloc_sat_action)
