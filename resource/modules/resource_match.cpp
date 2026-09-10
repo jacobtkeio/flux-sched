@@ -320,6 +320,7 @@ static int populate_resource_db_acquire (std::shared_ptr<resource_ctx_t> &ctx)
                     uri->c_str ());
             goto done;
         }
+        flux_log (ctx->h, LOG_INFO, "mirroring %s", uri->c_str ());
     }
 
     if (ctx->m_notify_flags) {
