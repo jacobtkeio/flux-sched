@@ -176,24 +176,24 @@ common_args = (
     " --with-systemdsystemunitdir=/etc/systemd/system"
     " --localstatedir=/var"
 )
-#matrix.add_multiarch_build(
+# matrix.add_multiarch_build(
 #    name="bookworm",
 #    default_suffix=" - test-install",
 #    args=common_args,
 #    env=dict(
 #        TEST_INSTALL="t",
 #    ),
-#)
+# )
 #
-#matrix.add_multiarch_build(
+# matrix.add_multiarch_build(
 #    name="noble",
 #    default_suffix=" - test-install",
 #    args=common_args,
 #    env=dict(
 #        TEST_INSTALL="t",
 #    ),
-#)
-#matrix.add_multiarch_build(
+# )
+# matrix.add_multiarch_build(
 #    name="el9",
 #    default_suffix=" - test-install",
 #    args=common_args,
@@ -201,25 +201,25 @@ common_args = (
 #        TEST_INSTALL="t",
 #        CHECK_RUN_SOURCE_ENV="/opt/rh/gcc-toolset-13/enable",
 #    ),
-#)
-#matrix.add_multiarch_build(
+# )
+# matrix.add_multiarch_build(
 #    name="el10",
 #    default_suffix=" - test-install",
 #    args=common_args,
 #    env=dict(
 #        TEST_INSTALL="t",
 #    ),
-#)
-#matrix.add_multiarch_build(
+# )
+# matrix.add_multiarch_build(
 #    name="alpine",
 #    default_suffix=" - test-install",
 #    args=common_args,
 #    env=dict(
 #        TEST_INSTALL="t",
 #    ),
-#)
+# )
 ## single arch builds that still produce a container
-#matrix.add_build(
+# matrix.add_build(
 #    name="fedora40 - test-install",
 #    image="fedora40",
 #    args=common_args,
@@ -227,10 +227,10 @@ common_args = (
 #        TEST_INSTALL="t",
 #    ),
 #    docker_tag=True,
-#)
+# )
 #
 ## Ubuntu: TEST_INSTALL, test oldest supported clang
-#matrix.add_build(
+# matrix.add_build(
 #    name="jammy - test-install",
 #    image="jammy",
 #    env=dict(
@@ -242,7 +242,7 @@ common_args = (
 #        CXXFLAGS="-gdwarf-4",
 #    ),
 #    docker_tag=True,
-#)
+# )
 
 # Debian: gcc-12, distcheck
 matrix.add_build(
@@ -268,15 +268,15 @@ matrix.add_build(
 )
 
 ## coverage
-#matrix.add_build(
+# matrix.add_build(
 #    name="coverage",
 #    image="bookworm",
 #    coverage_flags="ci-basic",
 #    coverage=True,
-#)
+# )
 #
 ## RHEL8 clone
-#matrix.add_build(
+# matrix.add_build(
 #    name="el8 - test-install",
 #    image="el8",
 #    env=dict(
@@ -286,6 +286,6 @@ matrix.add_build(
 #        PYTHON="/usr/bin/python3.6",
 #    ),
 #    docker_tag=True,
-#)
+# )
 
 print(matrix)
