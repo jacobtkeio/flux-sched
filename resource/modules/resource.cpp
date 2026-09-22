@@ -394,7 +394,14 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
         flux_log_error (h, "%s: existent job (%jd).", __FUNCTION__, (intmax_t)jobid);
         goto error;
     }
-    if (run_match (ctx, jobid, cmd, js_str, &now, &at, &overhead, R, NULL) < 0) {
+    if (run_match (ctx,
+                   (dfu_match_attrs){js_str, jobid, 0, match_op_from_string (cmd)},
+                   &now,
+                   &at,
+                   &overhead,
+                   R,
+                   NULL)
+        < 0) {
         if (errno != EBUSY && errno != ENODEV)
             flux_log_error (ctx->h,
                             "%s: match failed due to match error (id=%jd)",
@@ -481,7 +488,14 @@ static void match_multi_request_cb (flux_t *h,
             free (jobspec_str);
             goto error;
         }
-        if (run_match (ctx, jobid, cmd, jobspec_str, &now, &at, &overhead, R, NULL) < 0) {
+        if (run_match (ctx,
+                       (dfu_match_attrs){jobspec_str, jobid, 0, match_op_from_string (cmd)},
+                       &now,
+                       &at,
+                       &overhead,
+                       R,
+                       NULL)
+            < 0) {
             if (errno != EBUSY && errno != ENODEV)
                 flux_log_error (ctx->h,
                                 "%s: match failed due to match error (id=%jd)",

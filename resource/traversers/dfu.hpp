@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include "resource/traversers/dfu_impl.hpp"
 #include "resource/traversers/dfu_traverser_policy_factory.hpp"
+#include "resource/traversers/dfu_match_attrs.h"
 
 namespace Flux {
 namespace resource_model {
@@ -99,6 +100,8 @@ class dfu_traverser_t {
      *                       without_allocating, or without_allocating_future.
      *  \param id        job ID to use for the schedule operation.
      *  \param at[out]   when the job is scheduled if reserved.
+     *  \param attrs     optional attributes of the traversal:
+     *    match_overhead     double into which to return performance overhead.
      *  \return          0 on success; -1 on error.
      *                       EINVAL: graph, roots or match callback not set.
      *                       ENOTSUP: roots does not contain a subsystem the
@@ -108,10 +111,8 @@ class dfu_traverser_t {
      *                       ENODEV: unsatisfiable jobspec because no
      *                               resources/devices can satisfy the request.
      */
-    int run (Jobspec::Jobspec &jobspec,
+    int run (const dfu_match_attrs &attrs,
              std::shared_ptr<match_writers_t> &writers,
-             match_op_t op,
-             int64_t id,
              int64_t *at);
 
     /*! Read str which is a serialized allocation data (e.g., written in JGF)
