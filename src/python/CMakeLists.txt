@@ -26,6 +26,33 @@ set_target_properties(_reapi_cli PROPERTIES
   INSTALL_RPATH "${FLUX_LIB_DIR}"
 )
 
+# Build CFFI extension module for dfu_match_params bindings
+set(DFU_MATCH_PARAMS_BUILD_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/_fluxion/_dfu_match_params_build.py")
+set(DFU_MATCH_PARAMS_C_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/_dfu_match_params.c")
+
+# Generate C source from CFFI build script
+add_custom_command(
+  OUTPUT ${DFU_MATCH_PARAMS_C_SOURCE}
+  COMMAND ${Python_EXECUTABLE} ${DFU_MATCH_PARAMS_BUILD_SCRIPT}
+  DEPENDS ${DFU_MATCH_PARAMS_BUILD_SCRIPT}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating _dfu_match_params.c from CFFI build script"
+)
+
+# Build the Python extension module
+Python_add_library(_dfu_match_params MODULE ${DFU_MATCH_PARAMS_C_SOURCE})
+target_link_libraries(_dfu_match_params PRIVATE dfu_match_params)
+target_include_directories(_dfu_match_params PRIVATE
+  ${CMAKE_SOURCE_DIR}/resource/traversers
+)
+# Set output name without lib prefix and configure RPATH
+set_target_properties(_dfu_match_params PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "_dfu_match_params"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_fluxion"
+  INSTALL_RPATH "${FLUX_LIB_DIR}"
+)
+
 # Copy Python source files to build tree for build-tree testing
 set(FLUXION_PY_FILES
   fluxion/resourcegraph/V1.py
@@ -48,7 +75,7 @@ foreach(py_file ${FLUXION_PY_FILES})
 endforeach()
 
 # Install the extension module
-install(TARGETS _reapi_cli
+install(TARGETS _reapi_cli _dfu_match_params
   LIBRARY DESTINATION "${PYTHON_INSTALL_SITELIB}/_fluxion"
 )
 
