@@ -219,7 +219,8 @@ static void feasibility_request_cb (flux_t *h,
         goto error;
     }
     error.text[0] = '\0';
-    if (run_match (ctx, -1, "satisfiability", js_str, &now, &at, &overhead, R, &error) < 0) {
+    if (run_match (ctx, {js_str, -1, 0, MATCH_SATISFIABILITY}, &now, &at, &overhead, R, &error)
+        < 0) {
         if (errno == ENODEV)
             errmsg = "Unsatisfiable request";
         else {
