@@ -122,13 +122,18 @@ struct resource_ctx_t : public resource_interface_t {
 // Request Handler Routines
 ////////////////////////////////////////////////////////////////////////////////
 
-inline const char *get_status_string (std::string cmd, int64_t now, int64_t at)
+inline const char *get_status_string (match_op_t op, int64_t now, int64_t at)
 {
-    if (cmd == std::string ("without_allocating")
-        || cmd == std::string ("without_allocating_future"))
+    if (op == MATCH_WITHOUT_ALLOCATING
+        || op == MATCH_WITHOUT_ALLOCATING_FUTURE)
         return "MATCHED";
     else
         return (at == now) ? "ALLOCATED" : "RESERVED";
+}
+
+inline const char *get_status_string (const char *cmd, int64_t now, int64_t at)
+{
+    return get_status_string (match_op_from_string (cmd), now, at);
 }
 
 inline bool is_existent_jobid (const std::shared_ptr<resource_ctx_t> &ctx, uint64_t jobid)
@@ -139,9 +144,7 @@ inline bool is_existent_jobid (const std::shared_ptr<resource_ctx_t> &ctx, uint6
 int Rlite_equal (const std::shared_ptr<resource_ctx_t> &ctx, const char *R1, const char *R2);
 
 int run_match (std::shared_ptr<resource_ctx_t> &ctx,
-               int64_t jobid,
-               const char *cmd,
-               const std::string &jstr,
+               const dfu_match_attrs &attrs,
                int64_t *now,
                int64_t *at,
                double *overhead,

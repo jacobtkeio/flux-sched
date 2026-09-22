@@ -367,15 +367,14 @@ int dfu_traverser_t::initialize (std::shared_ptr<resource_graph_db_t> db,
     return initialize ();
 }
 
-int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
+int dfu_traverser_t::run (const dfu_match_attrs &attrs,
                           std::shared_ptr<match_writers_t> &writers,
-                          match_op_t op,
-                          int64_t jobid,
                           int64_t *at)
 {
     // Clear the error message to disambiguate errors
     clear_err_message ();
 
+    Flux::Jobspec::Jobspec jobspec{attrs.jobspec};
     subsystem_t dom = get_match_cb ()->dom_subsystem ();
     graph_duration_t graph_duration = get_graph_db ()->metadata.graph_duration;
     if (!get_graph () || !get_graph_db ()
@@ -396,21 +395,25 @@ int dfu_traverser_t::run (Jobspec::Jobspec &jobspec,
     std::unordered_map<resource_type_t, int64_t> dfv;
 
     traverser->prime_jobspec (jobspec.resources, dfv);
-    if (meta.build (jobspec, detail::jobmeta_t::alloc_type_t::AT_ALLOC, jobid, *at, graph_duration)
+    if (meta.build (jobspec,
+                    detail::jobmeta_t::alloc_type_t::AT_ALLOC,
+                    attrs.jobid,
+                    attrs.at,
+                    graph_duration)
         < 0)
         return -1;
 
     // If matching without allocation, set alloc_type to prevent allocation in update
-    if (op == match_op_t::MATCH_WITHOUT_ALLOCATING
-        || op == match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE)
+    if (attrs.op == match_op_t::MATCH_WITHOUT_ALLOCATING
+        || attrs.op == match_op_t::MATCH_WITHOUT_ALLOCATING_FUTURE)
         meta.alloc_type = jobmeta_t::alloc_type_t::AT_NO_ALLOC;
 
-    if (op == match_op_t::MATCH_SATISFIABILITY) {
+    if (attrs.op == match_op_t::MATCH_SATISFIABILITY) {
         rc = is_satisfiable (jobspec, meta, x, root, dfv);
         if (rc == 0) {
             traverser->update ();
         }
-    } else if ((rc = schedule (jobspec, meta, x, op, root, dfv)) == 0) {
+    } else if ((rc = schedule (jobspec, meta, x, attrs.op, root, dfv)) == 0) {
         *at = meta.at;
         if (*at == graph_end) {
             traverser->reset_exclusive_resource_types (exclusive_types);

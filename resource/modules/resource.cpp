@@ -9,6 +9,7 @@
 \*****************************************************************************/
 
 #include "resource_match.hpp"
+#include "resource/policies/base/match_op.cpp"
 
 MOD_NAME ("sched-fluxion-resource");
 
@@ -364,56 +365,50 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
 {
     int64_t at = 0;
     int64_t now = 0;
-    int64_t jobid = -1;
     double overhead = 0.0f;
-    const char *cmd = NULL;
-    const char *js_str = NULL;
     const char *status = nullptr;
     std::stringstream R;
+    dfu_match_attrs *attrs;
+    json_t *attrs_raw = nullptr;
 
     std::shared_ptr<resource_ctx_t> ctx = getctx ((flux_t *)arg);
-    if (flux_request_unpack (msg,
-                             NULL,
-                             "{s:s s:I s:s}",
-                             "cmd",
-                             &cmd,
-                             "jobid",
-                             &jobid,
-                             "jobspec",
-                             &js_str)
-        < 0)
+    if (flux_request_unpack (msg, NULL, "o", &attrs_raw) < 0)
         goto error;
+    attrs = match_attrs_from_json (attrs_raw);
+    if (!attrs) {
+        errno = EINVAL;
+        goto error;
+    }
     // Jobid -1 denotes that the matched resources do not belong to any particular job.
     // It does not affect any logic down the line, only the output.
     // The perf entry for jobid -1 will describe the latest such match.
-    if (std::string ("without_allocating") == cmd
-        || std::string ("without_allocating_future") == cmd) {
-        jobid = -1;
-    } else if (is_existent_jobid (ctx, jobid)) {
+    if (attrs->op == MATCH_WITHOUT_ALLOCATING || attrs->op == MATCH_WITHOUT_ALLOCATING_FUTURE) {
+        attrs->jobid = -1;
+    } else if (is_existent_jobid (ctx, attrs->jobid)) {
         errno = EINVAL;
-        flux_log_error (h, "%s: existent job (%jd).", __FUNCTION__, (intmax_t)jobid);
+        flux_log_error (h, "%s: existent job (%jd).", __FUNCTION__, (intmax_t)attrs->jobid);
         goto error;
     }
-    if (run_match (ctx, jobid, cmd, js_str, &now, &at, &overhead, R, NULL) < 0) {
+    if (run_match (ctx, *attrs, &now, &at, &overhead, R, NULL) < 0) {
         if (errno != EBUSY && errno != ENODEV)
             flux_log_error (ctx->h,
                             "%s: match failed due to match error (id=%jd)",
                             __FUNCTION__,
-                            (intmax_t)jobid);
+                            (intmax_t)attrs->jobid);
         // The resources couldn't be allocated *or reserved*
         // Kicking back to qmanager, remove from tracking
         if (errno == EBUSY) {
-            ctx->jobs.erase (jobid);
+            ctx->jobs.erase (attrs->jobid);
         }
         goto error;
     }
 
-    status = get_status_string (cmd, now, at);
+    status = get_status_string (attrs->op, now, at);
     if (flux_respond_pack (h,
                            msg,
                            "{s:I s:s s:f s:s s:I}",
                            "jobid",
-                           jobid,
+                           attrs->jobid,
                            "status",
                            status,
                            "overhead",
@@ -425,9 +420,15 @@ static void match_request_cb (flux_t *h, flux_msg_handler_t *w, const flux_msg_t
         < 0)
         flux_log_error (h, "%s", __FUNCTION__);
 
+    json_decref (attrs_raw);
+    free (attrs);
     return;
 
 error:
+    if (attrs_raw)
+        json_decref (attrs_raw);
+    if (attrs)
+        free (attrs);
     if (flux_respond_error (h, msg, errno, NULL) < 0)
         flux_log_error (h, "%s: flux_respond_error", __FUNCTION__);
 }
@@ -446,6 +447,7 @@ static void match_multi_request_cb (flux_t *h,
     const char *cmd = nullptr;
     const char *status = nullptr;
     std::shared_ptr<resource_ctx_t> ctx = getctx ((flux_t *)arg);
+    dfu_match_attrs attrs = default_match_attrs;
 
     if (!flux_msg_is_streaming (msg)) {
         errno = EPROTO;
@@ -453,7 +455,7 @@ static void match_multi_request_cb (flux_t *h,
     }
     if (flux_request_unpack (msg, NULL, "{s:s s:o}", "cmd", &cmd, "jobs", &jobs) < 0)
         goto error;
-    if (!json_is_array (jobs)) {
+    if (!match_op_valid (attrs.op = match_op_from_string (cmd)) || !json_is_array (jobs)) {
         errno = EINVAL;
         goto error;
     }
@@ -481,7 +483,8 @@ static void match_multi_request_cb (flux_t *h,
             free (jobspec_str);
             goto error;
         }
-        if (run_match (ctx, jobid, cmd, jobspec_str, &now, &at, &overhead, R, NULL) < 0) {
+        attrs.jobspec = jobspec_str;
+        if (run_match (ctx, attrs, &now, &at, &overhead, R, NULL) < 0) {
             if (errno != EBUSY && errno != ENODEV)
                 flux_log_error (ctx->h,
                                 "%s: match failed due to match error (id=%jd)",
@@ -497,7 +500,7 @@ static void match_multi_request_cb (flux_t *h,
         }
 
         free (jobspec_str);
-        status = get_status_string (cmd, now, at);
+        status = get_status_string (attrs.op, now, at);
         if (flux_respond_pack (h,
                                msg,
                                "{s:I s:s s:f s:s s:I}",

@@ -41,7 +41,7 @@ class ResourceModuleInterface:
         return resp["jobid"]
 
     def rpc_allocate(self, jobid, jobspec_str):
-        payload = {"cmd": "allocate", "jobid": jobid, "jobspec": jobspec_str}
+        payload = {"cmd": "allocate", "jobid": jobid, "jobspec": jobspec_str, "at": 0, "op": 2}
         return self.handle.rpc("sched-fluxion-resource.match", payload).get()
 
     def rpc_update(self, jobid, Res):

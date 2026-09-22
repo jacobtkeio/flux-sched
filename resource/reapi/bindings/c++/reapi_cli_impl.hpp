@@ -132,24 +132,13 @@ int reapi_cli_t::match_allocate (void *h,
         return -1;
     }
 
-    Flux::Jobspec::Jobspec job;
-    try {
-        job = Flux::Jobspec::Jobspec{jobspec};
-    } catch (Flux::Jobspec::parse_error &e) {
-        m_err_msg += __FUNCTION__;
-        m_err_msg += ": ERROR: Jobspec error for " + std::to_string (rq->get_job_counter ()) + ": "
-                     + std::string (e.what ()) + "\n";
-        errno = EINVAL;
-        return -1;
-    }
-
     /* The traverser returns -1 with errno set on failure.  It does not throw.
      * Continue on (but ultimately return -1) if errno is one of
      * EBUSY - temporarily unavailable
      * ENODEV - unsatisfiable
      * Otherwise, return immediately.
      */
-    if ((traverser_rc = rq->traverser_run (job, match_op, (int64_t)jobid, at)) < 0) {
+    if ((traverser_rc = rq->traverser_run (jobspec.c_str (), match_op, (int64_t)jobid, at)) < 0) {
         traverser_errno = errno;
         if (rq->get_traverser_err_msg () != "") {
             m_err_msg += __FUNCTION__;
@@ -1354,12 +1343,13 @@ void resource_query_t::incr_job_counter ()
     jobid_counter++;
 }
 
-int resource_query_t::traverser_run (Flux::Jobspec::Jobspec &job,
+int resource_query_t::traverser_run (const char *jobspec,
                                      match_op_t op,
                                      int64_t jobid,
                                      int64_t &at)
 {
-    return traverser->run (job, writers, op, jobid, &at);
+    dfu_match_attrs attrs = {jobspec, jobid, at, op};
+    return traverser->run (attrs, writers, &at);
 }
 
 int resource_query_t::traverser_find (std::string criteria)
