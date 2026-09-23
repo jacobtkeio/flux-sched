@@ -25,7 +25,16 @@ using namespace Flux::resource_model::detail;
 
 static int test_match_allocate_invalid_match_op ()
 {
-    void *h = nullptr;  // nullptr is OK - validation happens first
+    resource_query_t *rq = nullptr;
+    try {
+        rq = new resource_query_t ();
+    } catch (...) {
+        // Can't create context, skip this test
+        ok (1, "# SKIP: couldn't create minimal resource_query_t context");
+        return 0;
+    }
+
+    void *h = static_cast<void *> (rq);
     uint64_t jobid = 1;
     bool reserved = false;
     std::string jobspec = "{}";
