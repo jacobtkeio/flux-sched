@@ -441,7 +441,7 @@ static void match_multi_request_cb (flux_t *h,
     json_t *value;
     int saved_errno;
     json_t *jobs = nullptr;
-    uint64_t jobid = 0;
+    int64_t jobid = 0;
     std::string errmsg;
     const char *cmd = nullptr;
     const char *status = nullptr;
