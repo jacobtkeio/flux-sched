@@ -92,6 +92,7 @@ set(FLUXION_PY_FILES
   fluxion/reapi/__init__.py
   fluxion/reapi/cli.py
   fluxion/reapi/match_op.py
+  fluxion/reapi/match_attrs.py
   _fluxion/__init__.py
 )
 foreach(py_file ${FLUXION_PY_FILES})
