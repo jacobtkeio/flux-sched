@@ -34,7 +34,7 @@ struct dfu_match_attrs {
     match_op_t op;
 };
 
-const struct dfu_match_attrs default_match_attrs = {NULL, -1, 0, MATCH_UNKNOWN};
+extern const struct dfu_match_attrs default_match_attrs;
 
 /*! Encode a dfu_match_attrs struct as a json object.
  *  The caller must decref the new json object.

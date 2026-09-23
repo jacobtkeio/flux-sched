@@ -15,6 +15,8 @@
 #define AT_STR "at"
 #define OP_STR "op"
 
+const struct dfu_match_attrs default_match_attrs = {NULL, -1, 0, MATCH_UNKNOWN};
+
 json_t *match_attrs_to_json (struct dfu_match_attrs attrs)
 {
     return json_pack ("{s:s s:I s:I s:I}",
