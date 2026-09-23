@@ -22,19 +22,14 @@ ffi.set_source(
     """
     #include <flux/core.h>
     #include <reapi_cli.h>
+    #include "resource/policies/base/match_op.h"
     """,
-    libraries=["reapi_cli", "flux-core"],
+    libraries=["reapi_cli", "match_op", "flux-core"],
 )
 
 # C declarations from reapi_cli.h
 cdefs = """
-    typedef enum match_op_t {
-        MATCH_UNKNOWN,
-        MATCH_ALLOCATE,
-        MATCH_ALLOCATE_W_SATISFIABILITY,
-        MATCH_ALLOCATE_ORELSE_RESERVE,
-        MATCH_SATISFIABILITY
-    } match_op_t;
+    typedef enum match_op_t match_op_t;
 
     typedef enum resource_status_t {
         RESOURCE_UP = 0,

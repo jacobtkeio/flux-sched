@@ -25,7 +25,6 @@ from _fluxion._reapi_cli import ffi, lib as _lib
 RESOURCE_UP = _lib.RESOURCE_UP
 RESOURCE_DOWN = _lib.RESOURCE_DOWN
 
-# Import match options
 from fluxion.reapi.match_op import (
     MATCH_UNKNOWN,
     MATCH_ALLOCATE,
