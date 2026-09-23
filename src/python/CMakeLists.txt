@@ -1,4 +1,31 @@
 
+# Build CFFI extension module for match_op bindings
+set(DFU_MATCH_PARAMS_BUILD_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/_fluxion/_match_op_build.py")
+set(DFU_MATCH_PARAMS_C_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/_match_op.c")
+
+# Generate C source from CFFI build script
+add_custom_command(
+  OUTPUT ${DFU_MATCH_PARAMS_C_SOURCE}
+  COMMAND ${Python_EXECUTABLE} ${DFU_MATCH_PARAMS_BUILD_SCRIPT}
+  DEPENDS ${DFU_MATCH_PARAMS_BUILD_SCRIPT}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating _match_op.c from CFFI build script"
+)
+
+# Build the Python extension module
+Python_add_library(_match_op MODULE ${DFU_MATCH_PARAMS_C_SOURCE})
+target_link_libraries(_match_op PRIVATE match_op)
+target_include_directories(_match_op PRIVATE
+  ${CMAKE_SOURCE_DIR}/resource/traversers
+)
+# Set output name without lib prefix and configure RPATH
+set_target_properties(_match_op PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "_match_op"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_fluxion"
+  INSTALL_RPATH "${FLUX_LIB_DIR}"
+)
+
 # Build CFFI extension module for reapi_cli bindings
 set(REAPI_CLI_BUILD_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/_fluxion/_reapi_cli_build.py")
 set(REAPI_CLI_C_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/_reapi_cli.c")
@@ -64,6 +91,7 @@ set(FLUXION_PY_FILES
   fluxion/jsongraph/objects/node.py
   fluxion/reapi/__init__.py
   fluxion/reapi/cli.py
+  fluxion/reapi/match_op.py
   _fluxion/__init__.py
 )
 foreach(py_file ${FLUXION_PY_FILES})
@@ -75,7 +103,7 @@ foreach(py_file ${FLUXION_PY_FILES})
 endforeach()
 
 # Install the extension module
-install(TARGETS _reapi_cli _dfu_match_attrs
+install(TARGETS _reapi_cli _dfu_match_attrs _match_op
   LIBRARY DESTINATION "${PYTHON_INSTALL_SITELIB}/_fluxion"
 )
 
