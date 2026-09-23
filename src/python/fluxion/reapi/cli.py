@@ -25,6 +25,17 @@ from _fluxion._reapi_cli import ffi, lib as _lib
 RESOURCE_UP = _lib.RESOURCE_UP
 RESOURCE_DOWN = _lib.RESOURCE_DOWN
 
+# Import match options
+from fluxion.reapi.match_op import (
+    MATCH_UNKNOWN,
+    MATCH_ALLOCATE,
+    MATCH_ALLOCATE_W_SATISFIABILITY,
+    MATCH_ALLOCATE_ORELSE_RESERVE,
+    MATCH_SATISFIABILITY,
+    MATCH_WITHOUT_ALLOCATING,
+    MATCH_WITHOUT_ALLOCATING_FUTURE
+)
+
 
 class ReapiError(Exception):
     """Base exception for REAPI errors.
@@ -307,9 +318,9 @@ class Reapi:
         jobspec_bytes = jobspec_str.encode("utf-8")
 
         match_op = (
-            _lib.MATCH_ALLOCATE_ORELSE_RESERVE
+            MATCH_ALLOCATE_ORELSE_RESERVE
             if orelse_reserve
-            else _lib.MATCH_ALLOCATE
+            else MATCH_ALLOCATE
         )
         reserved_out = ffi.new("bool *")
         R_out = ffi.new("char **")
@@ -387,7 +398,7 @@ class Reapi:
 
         rc = _lib.reapi_cli_match_with_jobid(
             self._ctx,
-            _lib.MATCH_SATISFIABILITY,
+            MATCH_SATISFIABILITY,
             jobspec_bytes,
             0,
             reserved_out,
