@@ -111,9 +111,7 @@ class dfu_traverser_t {
      *                       ENODEV: unsatisfiable jobspec because no
      *                               resources/devices can satisfy the request.
      */
-    int run (const dfu_match_attrs &attrs,
-             std::shared_ptr<match_writers_t> &writers,
-             int64_t *at);
+    int run (const dfu_match_attrs &attrs, std::shared_ptr<match_writers_t> &writers, int64_t *at);
 
     /*! Read str which is a serialized allocation data (e.g., written in JGF)
      *  with rd, and traverse the resource graph to update it with this data.

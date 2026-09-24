@@ -26,13 +26,9 @@ RESOURCE_UP = _lib.RESOURCE_UP
 RESOURCE_DOWN = _lib.RESOURCE_DOWN
 
 from fluxion.reapi.match_op import (
-    MATCH_UNKNOWN,
     MATCH_ALLOCATE,
-    MATCH_ALLOCATE_W_SATISFIABILITY,
     MATCH_ALLOCATE_ORELSE_RESERVE,
     MATCH_SATISFIABILITY,
-    MATCH_WITHOUT_ALLOCATING,
-    MATCH_WITHOUT_ALLOCATING_FUTURE
 )
 
 
@@ -316,11 +312,7 @@ class Reapi:
             jobspec_str = jobspec
         jobspec_bytes = jobspec_str.encode("utf-8")
 
-        match_op = (
-            MATCH_ALLOCATE_ORELSE_RESERVE
-            if orelse_reserve
-            else MATCH_ALLOCATE
-        )
+        match_op = MATCH_ALLOCATE_ORELSE_RESERVE if orelse_reserve else MATCH_ALLOCATE
         reserved_out = ffi.new("bool *")
         R_out = ffi.new("char **")
         at_out = ffi.new("int64_t *")

@@ -36,6 +36,12 @@ struct dfu_match_attrs {
     int64_t at;
     match_op_t op;
 };
+
+extern const struct dfu_match_attrs default_match_attrs;
+
+const char *match_attrs_to_str (struct dfu_match_attrs attrs);
+
+struct dfu_match_attrs *match_attrs_from_str (const char *str);
 """
 
 ffi.cdef(cdefs)

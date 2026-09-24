@@ -143,7 +143,6 @@ int reapi_cli_t::match_allocate (void *h,
         return -1;
     }
 
-
     /* The traverser returns -1 with errno set on failure.  It does not throw.
      * Continue on (but ultimately return -1) if errno is one of
      * EBUSY - temporarily unavailable
@@ -1355,10 +1354,7 @@ void resource_query_t::incr_job_counter ()
     jobid_counter++;
 }
 
-int resource_query_t::traverser_run (const char *jobspec,
-                                     match_op_t op,
-                                     int64_t jobid,
-                                     int64_t &at)
+int resource_query_t::traverser_run (const char *jobspec, match_op_t op, int64_t jobid, int64_t &at)
 {
     dfu_match_attrs attrs = {jobspec, jobid, at, op};
     return traverser->run (attrs, writers, &at);

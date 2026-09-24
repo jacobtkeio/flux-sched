@@ -52,6 +52,22 @@ json_t *match_attrs_to_json (struct dfu_match_attrs attrs);
  */
 struct dfu_match_attrs *match_attrs_from_json (json_t *json);
 
+/*! Encode a dfu_match_attrs struct as a string.
+ *  The caller must free the new string.
+ *  \param attrs    Attribute struct to encode.
+ *  \return         Newly allocated string representing attrs;
+ *                  NULL on error.
+ */
+const char *match_attrs_to_str (struct dfu_match_attrs attrs);
+
+/*! Decode a string as a dfu_match_attrs struct.
+ *  The caller must free the new struct pointer.
+ *  \param str      String to decode.
+ *  \return         Newly allocated, populated struct ptr;
+ *                  NULL on error.
+ */
+struct dfu_match_attrs *match_attrs_from_str (const char *str);
+
 #ifdef __cplusplus
 }
 #endif

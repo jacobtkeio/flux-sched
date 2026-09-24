@@ -52,3 +52,19 @@ struct dfu_match_attrs *match_attrs_from_json (json_t *json)
         return attrs;
     return NULL;
 }
+
+const char *match_attrs_to_str (struct dfu_match_attrs attrs)
+{
+    return json_dumps (match_attrs_to_json (attrs), JSON_INDENT (0));
+}
+
+struct dfu_match_attrs *match_attrs_from_str (const char *str)
+{
+    json_t *json = json_loads (str, 0, NULL);
+    struct dfu_match_attrs *attrs;
+    if (!json)
+        return NULL;
+    attrs = match_attrs_from_json (json);
+    json_decref (json);
+    return attrs;
+}

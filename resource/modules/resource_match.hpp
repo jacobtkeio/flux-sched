@@ -124,8 +124,7 @@ struct resource_ctx_t : public resource_interface_t {
 
 inline const char *get_status_string (match_op_t op, int64_t now, int64_t at)
 {
-    if (op == MATCH_WITHOUT_ALLOCATING
-        || op == MATCH_WITHOUT_ALLOCATING_FUTURE)
+    if (op == MATCH_WITHOUT_ALLOCATING || op == MATCH_WITHOUT_ALLOCATING_FUTURE)
         return "MATCHED";
     else
         return (at == now) ? "ALLOCATED" : "RESERVED";
