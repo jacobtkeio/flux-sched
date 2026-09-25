@@ -25,6 +25,7 @@ extern "C" {
 #include <string>
 #include <optional>
 #include "resource/schema/resource_data.hpp"
+#include "resource/policies/base/match_op.h"
 
 namespace Flux {
 namespace resource_model {
@@ -97,6 +98,54 @@ class queue_adapter_base_t {
  */
 class reapi_t {
    public:
+    /*! Match a jobspec to the "best" resources and either allocate
+     *  orelse reserve them. The best resources are determined by
+     *  the selected match policy.
+     *
+     *  \param h         Opaque handle. How it is used is an implementation
+     *                   detail. However, when it is used within a Flux's
+     *                   service module, it is expected to be a pointer
+     *                   to a flux_t object.
+     *  \param match_op  match_op_t: set to specify the specific match option
+     *                   from 1 of 4 choices:
+     *                   MATCH_ALLOCATE: try to allocate now and fail if resources
+     *                   aren't available.
+     *                   MATCH_ALLOCATE_ORELSE_RESERVE : Try to allocate and reserve
+     *                   if resources aren't available now.
+     *                   MATCH_SATISFIABILITY: Do a satisfiablity check and do not
+     *                   allocate.
+     *                   MATCH_ALLOCATE_W_SATISFIABILITY: try to allocate and run
+     *                   satisfiability check if resources are not available.
+     *                   MATCH_WITHOUT_ALLOCATING: match and return resources
+     *                   but do not allocate or reserve them.
+     *                   MATCH_WITHOUT_ALLOCATING_FUTURE: match and return resources
+     *                   but do not allocate or reserve them. Return the earliest
+     *                   match, which could be in the future.
+     *  \param jobspec   jobspec string.
+     *  \param jobid     jobid of the uint64_t type.
+     *  \param reserved  Boolean into which to return true if this job has been
+     *                   reserved instead of allocated.
+     *  \param R         String into which to return the resource set either
+     *                   allocated or reserved.
+     *  \param at        If allocated, 0 is returned; if reserved, actual time
+     *                   at which the job is reserved.
+     *  \param ov        Double into which to return performance overhead
+     *                   in terms of elapse time needed to complete
+     *                   the match operation.
+     *  \return          0 on success; -1 on error.
+     */
+    static int match_allocate (void *h,
+                               match_op_t match_op,
+                               const std::string &jobspec,
+                               const uint64_t jobid,
+                               bool &reserved,
+                               std::string &R,
+                               int64_t &at,
+                               double &ov)
+    {
+        return -1;
+    }
+
     /*! Match a jobspec to the "best" resources and either allocate
      *  orelse reserve them. The best resources are determined by
      *  the selected match policy.
