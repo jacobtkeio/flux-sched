@@ -20,12 +20,14 @@ extern "C" {
 
 #include "resource/policies/base/match_op.h"
 
-/*! Wrapper for optional traversal attributes.
+/*! Wrapper for traversal attributes.
  *  Passing around a pointer to dfu_match_attrs allows adding new attributes
  *  without breaking ABI compatibility.
- *    jobid              E
- *    at
- *    op
+ *    jobspec       Jobspec string to match.
+ *    jobid         Assigned jobid.
+ *    at            When to match resources.
+ *    op            Which match operation to perform;
+ *                  see resource/policies/base/match_op.h for the full list.
  */
 struct dfu_match_attrs {
     const char *jobspec;
