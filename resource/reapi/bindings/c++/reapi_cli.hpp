@@ -27,6 +27,7 @@ extern "C" {
 #include "resource/jobinfo/jobinfo.hpp"
 #include "resource/policies/dfu_match_policy_factory.hpp"
 #include "resource/traversers/dfu.hpp"
+#include "resource/traversers/dfu_match_attrs.h"
 #include "resource/policies/base/match_op.h"
 #include "resource/writers/match_writers.hpp"
 
@@ -136,6 +137,12 @@ class resource_query_t {
 
 class reapi_cli_t : public reapi_t {
    public:
+    static int match (void *h,
+                      const dfu_match_attrs &attrs,
+                      bool &reserved,
+                      std::string &R,
+                      int64_t &at,
+                      double &ov);
     static int match_allocate (void *h,
                                match_op_t match_op,
                                const std::string &jobspec,

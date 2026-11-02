@@ -26,6 +26,7 @@ extern "C" {
 #include <optional>
 #include "resource/schema/resource_data.hpp"
 #include "resource/policies/base/match_op.h"
+#include "resource/traversers/dfu_match_attrs.h"
 
 namespace Flux {
 namespace resource_model {
@@ -98,6 +99,37 @@ class queue_adapter_base_t {
  */
 class reapi_t {
    public:
+    /*! Match a jobspec to the "best" resources and either allocate
+     *  orelse reserve them. The best resources are determined by
+     *  the selected match policy.
+     *
+     *  \param h         Opaque handle. How it is used is an implementation
+     *                   detail. However, when it is used within a Flux's
+     *                   service module, it is expected to be a pointer
+     *                   to a flux_t object.
+     *  \param attrs     Input parameters of the match operation;
+     *                   see resource/traversers/dfu_match_attrs.h for the full list.
+     *  \param reserved  Boolean into which to return true if this job has been
+     *                   reserved instead of allocated.
+     *  \param R         String into which to return the resource set either
+     *                   allocated or reserved.
+     *  \param at        If allocated, 0 is returned; if reserved, actual time
+     *                   at which the job is reserved.
+     *  \param ov        Double into which to return performance overhead
+     *                   in terms of elapse time needed to complete
+     *                   the match operation.
+     *  \return          0 on success; -1 on error.
+     */
+    static int match (void *h,
+                      const dfu_match_attrs &attrs,
+                      bool &reserved,
+                      std::string &R,
+                      int64_t &at,
+                      double &ov)
+    {
+        return -1;
+    }
+
     /*! Match a jobspec to the "best" resources and either allocate
      *  orelse reserve them. The best resources are determined by
      *  the selected match policy.

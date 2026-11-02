@@ -25,14 +25,12 @@ namespace Flux {
 namespace resource_model {
 namespace detail {
 
-int reapi_module_t::match_allocate (void *h,
-                                    match_op_t match_op,
-                                    const std::string &jobspec,
-                                    const uint64_t jobid,
-                                    bool &reserved,
-                                    std::string &R,
-                                    int64_t &at,
-                                    double &ov)
+static int match (void *h,
+                  const dfu_match_attrs &attrs,
+                  bool &reserved,
+                  std::string &R,
+                  int64_t &at,
+                  double &ov)
 {
     int rc = -1;
     int64_t rj = -1;
@@ -40,9 +38,8 @@ int reapi_module_t::match_allocate (void *h,
     flux_future_t *f = NULL;
     const char *rset = NULL;
     const char *status = NULL;
-    const char *cmd = match_op_to_string (match_op);
 
-    if (!fh || !cmd || jobspec == "" || jobid > INT64_MAX) {
+    if (!fh || attrs.jobspec == std::string ("") || attrs.jobid > INT64_MAX) {
         errno = EINVAL;
         goto out;
     }
@@ -53,11 +50,11 @@ int reapi_module_t::match_allocate (void *h,
                              0,
                              "{s:s s:I s:s}",
                              "cmd",
-                             cmd,
+                             match_op_to_string (attrs.op),
                              "jobid",
-                             (const int64_t)jobid,
+                             attrs.jobid,
                              "jobspec",
-                             jobspec.c_str ()))) {
+                             attrs.jobspec))) {
         goto out;
     }
 
@@ -87,6 +84,18 @@ int reapi_module_t::match_allocate (void *h,
 out:
     flux_future_destroy (f);
     return rc;
+}
+
+int reapi_module_t::match_allocate (void *h,
+                                    match_op_t match_op,
+                                    const std::string &jobspec,
+                                    const uint64_t jobid,
+                                    bool &reserved,
+                                    std::string &R,
+                                    int64_t &at,
+                                    double &ov)
+{
+    return match (h, {jobspec.c_str (), (const int64_t)jobid, at, match_op}, reserved, R, at, ov);
 }
 
 int reapi_module_t::match_allocate (void *h,

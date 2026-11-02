@@ -19,6 +19,20 @@
 extern "C" {
 #endif
 
+/*! Enum representing the available match operations:
+ *
+ *  MATCH_ALLOCATE: try to allocate now and fail if resources aren't available.
+ *  MATCH_ALLOCATE_ORELSE_RESERVE : Try to allocate and reserve if resources
+ *      aren't available now.
+ *  MATCH_SATISFIABILITY: Do a satisfiablity check and do not allocate.
+ *  MATCH_ALLOCATE_W_SATISFIABILITY: try to allocate and run satisfiability
+ *      check if resources are not available.
+ *  MATCH_WITHOUT_ALLOCATING: match and return resources but do not allocate or
+ *      reserve them.
+ *  MATCH_WITHOUT_ALLOCATING_FUTURE: match and return resources but do not
+ *      allocate or reserve them. Return the earliest match, which could be in
+ *      the future.
+ */
 typedef enum match_op_t {
     MATCH_UNKNOWN,
     MATCH_ALLOCATE,

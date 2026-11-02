@@ -25,6 +25,7 @@ extern "C" {
 #include "resource/reapi/bindings/c++/reapi.hpp"
 #include "resource/policies/base/match_op.h"
 #include "resource/writers/match_writers.hpp"
+#include "resource/traversers/dfu_match_attrs.h"
 
 namespace Flux {
 namespace resource_model {
@@ -32,6 +33,12 @@ namespace detail {
 
 class reapi_module_t : public reapi_t {
    public:
+    static int match (void *h,
+                      const dfu_match_attrs &attrs,
+                      bool &reserved,
+                      std::string &R,
+                      int64_t &at,
+                      double &ov);
     static int match_allocate (void *h,
                                match_op_t match_op,
                                const std::string &jobspec,
